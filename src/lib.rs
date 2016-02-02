@@ -92,22 +92,20 @@ impl<'a> Project<'a> {
 
 pub fn bars() -> Handlebars {
     let mut hbs = Handlebars::new();
-    hbs.register_helper(
-        "upper",
-        Box::new(|c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> std::result::Result<(), RenderError> {
-            let param = h.params().get(0).unwrap();
-            let value = c.navigate(rc.get_path(), param);
-            try!(rc.writer.write(value.as_string().unwrap().to_uppercase().as_bytes()));
-            Ok(())
-        }));
-    hbs.register_helper(
-        "lower",
-        Box::new(|c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> std::result::Result<(), RenderError> {
-            let param = h.params().get(0).unwrap();
-            let value = c.navigate(rc.get_path(), param);
-            try!(rc.writer.write(value.as_string().unwrap().to_lowercase().as_bytes()));
-            Ok(())
-        }));
+    fn transform<F>(bars: &mut Handlebars, name: &str, f: F) where F: 'static + Fn(&str) -> String + Sync + Send {
+        bars.register_helper(
+            name,
+            Box::new(move |c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> std::result::Result<(), RenderError> {
+                let param = h.params().get(0).unwrap();
+                let value = c.navigate(rc.get_path(), param);
+                try!(rc.writer.write(f(value.as_string().unwrap()).as_bytes()));
+                Ok(())
+            }));
+    }
+
+    transform(&mut hbs, "upper", str::to_uppercase);
+    transform(&mut hbs, "lower", str::to_lowercase);
+
     hbs
 }
 
