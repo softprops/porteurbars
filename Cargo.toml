@@ -1,0 +1,9 @@
+[package]
+name = "porteurbars"
+version = "0.1.0"
+authors = ["softprops <d.tangren@gmail.com>"]
+
+[dependencies]
+tempdir = "0.3"
+handlebars = "0.12"
+clap = "1.5"
