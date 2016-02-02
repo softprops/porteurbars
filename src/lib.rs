@@ -17,14 +17,19 @@ const TMP_PREFIX: &'static str = "porteurbars";
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Project<'a> {
+    /// target output dir
     pub target: &'a Path,
+    /// defaults env faile
     pub defaults: &'a str,
+    /// relative path to project template src
     pub project: &'a Path,
+    /// remote git repo
     pub repo: &'a str
 }
 
 impl<'a> Project<'a> {
-    pub fn apply(&self) -> Result<()> {
+    /// Apply project template
+    pub fn apply(&self) -> Result<&'a Path> {
         let scratch = try!(tempdir::TempDir::new(TMP_PREFIX));
 
         try!(clone(self.repo, scratch.path().to_str().unwrap(), None));
@@ -78,7 +83,7 @@ impl<'a> Project<'a> {
                 let mut hbs = Handlebars::new();
                 try!(walk(&mut hbs, scratch.path(), &apply, false));
 
-                Ok(())
+                Ok(self.target)
             }
             _ => Err(Error::DefaultsNotFound)
         }
