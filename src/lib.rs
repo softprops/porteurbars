@@ -4,7 +4,7 @@ extern crate tempdir;
 pub mod errors;
 pub use errors::Error;
 
-use handlebars::{Context, Handlebars};
+use handlebars::{Context, Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::{self, File, read_dir};
@@ -80,7 +80,7 @@ impl<'a> Project<'a> {
                     }
                     Ok(())
                 };
-                let mut hbs = Handlebars::new();
+                let mut hbs = bars();
                 try!(walk(&mut hbs, scratch.path(), &apply, false));
 
                 Ok(self.target)
@@ -88,6 +88,27 @@ impl<'a> Project<'a> {
             _ => Err(Error::DefaultsNotFound)
         }
     }
+}
+
+pub fn bars() -> Handlebars {
+    let mut hbs = Handlebars::new();
+    hbs.register_helper(
+        "upper",
+        Box::new(|c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> std::result::Result<(), RenderError> {
+            let param = h.params().get(0).unwrap();
+            let value = c.navigate(rc.get_path(), param);
+            try!(rc.writer.write(value.as_string().unwrap().to_uppercase().as_bytes()));
+            Ok(())
+        }));
+    hbs.register_helper(
+        "lower",
+        Box::new(|c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> std::result::Result<(), RenderError> {
+            let param = h.params().get(0).unwrap();
+            let value = c.navigate(rc.get_path(), param);
+            try!(rc.writer.write(value.as_string().unwrap().to_lowercase().as_bytes()));
+            Ok(())
+        }));
+    hbs
 }
 
 /// prompt for a value defaulting to a given string when an answer is not available
@@ -184,6 +205,18 @@ fn find(target_dir: &Path, target_name: &str) -> io::Result<Option<PathBuf>> {
     Ok(None)
 }
 
-#[test]
-fn it_works() {
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+    use super::*;
+    #[test]
+    fn test_bars() {
+        let mut bars = bars();
+        let mut map = BTreeMap::new();
+        let source = "Hello, {{upper name}}";
+        bars.register_template_string("test", source.to_string())
+            .ok().unwrap();
+        map.insert("name".to_owned(), "porteurbars".to_owned());
+        assert_eq!("Hello, PORTEURBARS", bars.render("test", &map).unwrap());
+    }
 }
