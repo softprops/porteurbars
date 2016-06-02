@@ -7,7 +7,7 @@ pub use errors::Error;
 use handlebars::{Context, Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
 use std::env;
-use std::fs::{self, File, read_dir};
+use std::fs::{self, File, create_dir_all};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::process::{self, Stdio, Command};
 use std::io::{self, Read, Write};
@@ -28,58 +28,60 @@ pub struct Project<'a> {
 }
 
 impl<'a> Project<'a> {
+
     /// Apply project template
     pub fn apply(&self) -> Result<&'a Path> {
+        // source files
+        // expected layout
+        // defaults.env
+        // template/*
         let scratch = try!(tempdir::TempDir::new(TMP_PREFIX));
-
         try!(clone(self.repo, scratch.path().to_str().unwrap(), None));
 
-        let exclude = |path: &str| -> bool { path.starts_with(".git") || path == self.defaults };
+        // exclusion rules
+        let exclude = |path: &str| -> bool { path.starts_with(".git") };
 
         match find(scratch.path(), self.defaults) {
             Ok(Some(defaults)) => {
-                // todo resolve project dir
 
+                // resolve context
                 let map = try!(parse_defaults(defaults.as_path()));
-
                 let resolved = try!(interact(&map));
-
                 let data = Context::wraps(&resolved);
 
+                // apply handlebars processing
                 let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
+                    // /tmp/download_dir/
                     let scratchpath = &format!("{}{}",
                                                scratch.path().to_str().unwrap(),
                                                MAIN_SEPARATOR)[..];
 
-                    // path relatived based on scratch dir with hbs ext removed.
+                    // path relatived based on scratch dir
                     let localpath = path.to_str()
                         .unwrap()
-                        .trim_left_matches(scratchpath)
-                        .trim_right_matches(".hbs");
+                        .trim_left_matches(scratchpath);
 
-                    // rewritten path, based on target dir
-                    let targetpath = self.target.join(localpath);
+                    // eval path as template
+                    let evalpath = try!(hbs.template_render(&localpath, &resolved));
+
+                    // rewritten path, based on target dir and eval path
+                    let targetpath = self.target.join(evalpath);
 
                     if !exclude(localpath) {
                         if path.is_file() {
-                            if let Some(ext) = path.extension() {
-                                if "hbs" == ext {
-                                    let mut file = try!(File::open(path));
-                                    let mut s = String::new();
-                                    try!(file.read_to_string(&mut s));
-                                    try!(hbs.register_template_string(localpath, s));
-                                    let mut file = try!(File::create(targetpath));
-                                    try!(hbs.renderw(localpath, &data, &mut file));
-                                    return Ok(());
-                                }
-                            }
-                            try!(fs::copy(path, targetpath));
+                            let mut file = try!(File::open(path));
+                            let mut s = String::new();
+                            try!(file.read_to_string(&mut s));
+                            let mut file = try!(File::create(targetpath));
+                            try!(hbs.template_renderw(&s, &data, &mut file));
                         } else {
                             try!(fs::create_dir_all(targetpath))
                         }
                     }
                     Ok(())
                 };
+
+                try!(create_dir_all(self.target));
                 let mut hbs = bars();
                 try!(walk(&mut hbs, scratch.path(), &apply, false));
 
@@ -209,12 +211,8 @@ mod tests {
     use super::*;
     #[test]
     fn test_bars() {
-        let mut bars = bars();
         let mut map = BTreeMap::new();
-        let source = "Hello, {{upper name}}";
-        bars.register_template_string("test", source.to_string())
-            .ok().unwrap();
         map.insert("name".to_owned(), "porteurbars".to_owned());
-        assert_eq!("Hello, PORTEURBARS", bars.render("test", &map).unwrap());
+        assert_eq!("Hello, PORTEURBARS", bars().template_render("Hello, {{upper name}}", &map).unwrap());
     }
 }
