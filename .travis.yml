@@ -1,0 +1,41 @@
+sudo: false
+language: rust
+matrix:
+  fast_finish: true
+  include:
+  - rust: nightly
+  - rust: beta
+  - rust: stable
+script:
+- cargo build
+- cargo test
+cache:
+  cargo: true
+  apt: true
+  directories:
+  - target/debug/deps
+  - target/debug/build
+addons:
+  apt:
+    packages:
+    - libcurl4-openssl-dev
+    - libelf-dev
+    - libdw-dev
+    - binutils-dev
+    - libbfd-dev
+after_success: |-
+  [ $TRAVIS_RUST_VERSION = stable ] &&
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  cargo doc --no-deps &&
+  echo "<meta http-equiv=refresh content=0;url=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 2`/index.html>" > target/doc/index.html &&
+  pip install --user ghp-import &&
+  /home/travis/.local/bin/ghp-import -n target/doc &&
+  git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages &&
+  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+  tar xzf master.tar.gz && mkdir kcov-master/build && cd kcov-master/build && cmake .. && make && make install DESTDIR=../tmp && cd ../.. &&
+  ls target/debug &&
+  ./kcov-master/tmp/usr/local/bin/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/porteurbars-*
+env:
+  global:
+    secure: eYvJL9qSyPPcopyquSMWVjNI7svMuTqqjRTGDXlyN3fcYMUraWV69qJBVRmSuMIo6KvGnKWZz8Ari7+fq8RybQteVaaQS+PrlwVnjJidB8ELq3wDDKD7bj9iRIjOyfwYUe3oEN4Y+XYOwyICBDq7bC6vIf9OIlhZg9jQ+tweXKKPEjQ68+MIhUDXbH8VPYd4SREsmE6q9zPTJ54l5cBmZDED0QF5RWgrt9Gn8pgW+u2utYcT/0iJnf//WLb2nCxfzATkVQFnyTni+RJnngBJ7KDZR2qlpOxdoV6iax0I6SXwx2TIxNUyLhmFomFrIkIjHjlQRq+NBKy/ehUK4TvpRxWWMgCzTxrd3STCeFR+HnDbspMAUzlnBGdMrxPH3LCj9KgkekaJMZ29ryZYCtaFnO58FiTUBreNDWibcWRqXmwhbMzWT6pLRzuYjYH0jIm5WjnleKTznpN4Me5VMVUBpzdAPs0VKvhGavJn4bT/5W1dhFmhuNlD5kCdkjD5oZI74MyxepTr4Bg0wo3bLSjfmyq77Qxvo9HcVxhukBAIwvILElWL5UK+dguEJWP/iqtbfwxfa7tTOrIF3GTfL3fSfI2B/pAUzGnzWzFaZWU357NEDZOCXACoUEhG3JYNwR6//YvJaXBVoQHAq+ZSd4oEyrAnaDjnBJr1CBfWVTpyfFI=
