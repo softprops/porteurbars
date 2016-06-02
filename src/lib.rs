@@ -13,6 +13,8 @@ use std::process::{self, Stdio, Command};
 use std::io::{self, Read, Write};
 
 const TMP_PREFIX: &'static str = "porteurbars";
+const TEMPLATE_DIR: &'static str = "template";
+
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -43,11 +45,11 @@ impl<'a> Template<'a> {
                 let data = Context::wraps(&resolved);
 
                 let mut template_dir = scratch.path().to_path_buf();
-                template_dir.push("template");
+                template_dir.push(TEMPLATE_DIR);
 
                 // apply handlebars processing
                 let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
-                    // /tmp/download_dir/
+                    // /tmp/download_dir/templates
                     let scratchpath =
                         &format!("{}{}", template_dir.to_str().unwrap(), MAIN_SEPARATOR)[..];
 
