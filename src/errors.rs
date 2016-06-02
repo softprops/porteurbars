@@ -7,7 +7,7 @@ pub enum Error {
     Io(io::Error),
     Render(RenderError),
     Template(TemplateError),
-    TemplateRender(TemplateRenderError)
+    TemplateRender(TemplateRenderError),
 }
 
 impl From<io::Error> for Error {

@@ -16,7 +16,7 @@ const TMP_PREFIX: &'static str = "porteurbars";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub struct Project<'a> {
+pub struct Template<'a> {
     /// target output dir
     pub target: &'a Path,
     /// defaults env faile
@@ -24,11 +24,10 @@ pub struct Project<'a> {
     /// relative path to project template src
     pub project: &'a Path,
     /// remote git repo
-    pub repo: &'a str
+    pub repo: &'a str,
 }
 
-impl<'a> Project<'a> {
-
+impl<'a> Template<'a> {
     /// Apply project template
     pub fn apply(&self) -> Result<&'a Path> {
         // source files
@@ -52,9 +51,8 @@ impl<'a> Project<'a> {
                 // apply handlebars processing
                 let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
                     // /tmp/download_dir/
-                    let scratchpath = &format!("{}{}",
-                                               scratch.path().to_str().unwrap(),
-                                               MAIN_SEPARATOR)[..];
+                    let scratchpath =
+                        &format!("{}{}", scratch.path().to_str().unwrap(), MAIN_SEPARATOR)[..];
 
                     // path relatived based on scratch dir
                     let localpath = path.to_str()
@@ -87,22 +85,27 @@ impl<'a> Project<'a> {
 
                 Ok(self.target)
             }
-            _ => Err(Error::DefaultsNotFound)
+            _ => Err(Error::DefaultsNotFound),
         }
     }
 }
 
 pub fn bars() -> Handlebars {
     let mut hbs = Handlebars::new();
-    fn transform<F>(bars: &mut Handlebars, name: &str, f: F) where F: 'static + Fn(&str) -> String + Sync + Send {
-        bars.register_helper(
-            name,
-            Box::new(move |c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> std::result::Result<(), RenderError> {
-                let param = h.params().get(0).unwrap();
-                let value = c.navigate(rc.get_path(), param);
-                try!(rc.writer.write(f(value.as_string().unwrap()).as_bytes()));
-                Ok(())
-            }));
+    fn transform<F>(bars: &mut Handlebars, name: &str, f: F)
+        where F: 'static + Fn(&str) -> String + Sync + Send
+    {
+        bars.register_helper(name,
+                             Box::new(move |c: &Context,
+                                            h: &Helper,
+                                            _: &Handlebars,
+                                            rc: &mut RenderContext|
+                                            -> std::result::Result<(), RenderError> {
+                                 let param = h.params().get(0).unwrap();
+                                 let value = c.navigate(rc.get_path(), param);
+                                 try!(rc.writer.write(f(value.as_string().unwrap()).as_bytes()));
+                                 Ok(())
+                             }));
     }
 
     transform(&mut hbs, "upper", str::to_uppercase);
@@ -136,10 +139,10 @@ fn clone(repo: &str, to: &str, branch: Option<&str>) -> io::Result<process::Outp
     };
 
     git.arg(repo)
-       .arg(to)
-       .stdout(Stdio::inherit())
-       .stderr(Stdio::inherit())
-       .output()
+        .arg(to)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()
 }
 
 fn parse_defaults(p: &Path) -> io::Result<BTreeMap<String, String>> {
@@ -149,8 +152,8 @@ fn parse_defaults(p: &Path) -> io::Result<BTreeMap<String, String>> {
     try!(f.read_to_string(&mut s));
 
     let values = s.lines()
-                  .map(|l| l.split("=").take(2).collect::<Vec<&str>>())
-                  .collect::<Vec<Vec<&str>>>();
+        .map(|l| l.split("=").take(2).collect::<Vec<&str>>())
+        .collect::<Vec<Vec<&str>>>();
     for pair in values.iter() {
         if pair.len() == 2 {
             map.insert(pair[0].trim().to_owned(), pair[1].trim().to_owned());
@@ -213,6 +216,7 @@ mod tests {
     fn test_bars() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "porteurbars".to_owned());
-        assert_eq!("Hello, PORTEURBARS", bars().template_render("Hello, {{upper name}}", &map).unwrap());
+        assert_eq!("Hello, PORTEURBARS",
+                   bars().template_render("Hello, {{upper name}}", &map).unwrap());
     }
 }
