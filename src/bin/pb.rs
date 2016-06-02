@@ -25,14 +25,18 @@ fn main() {
                               (user/repo)'"))
         .get_matches();
 
-    let project = Template {
-        target: Path::new(args.value_of("target").unwrap_or(".")),
-        defaults: args.value_of("defaults").unwrap_or("default.env"),
-        project: Path::new(args.value_of("project").unwrap_or(".")),
-        repo: args.value_of("repo").unwrap(),
-    };
+    if let Some(args) = args.subcommand_matches("apply") {
+        let project = Template {
+            target: Path::new(args.value_of("target").unwrap_or(".")),
+            defaults: args.value_of("defaults").unwrap_or("default.env"),
+            project: Path::new(args.value_of("project").unwrap_or(".")),
+            repo: args.value_of("repo").unwrap(),
+        };
 
-    project.apply().unwrap();
+        project.apply().unwrap();
 
-    println!("off you go")
+        println!("off you go")
+    }
+
+
 }
