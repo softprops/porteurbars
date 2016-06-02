@@ -30,15 +30,9 @@ pub struct Template<'a> {
 impl<'a> Template<'a> {
     /// Apply project template
     pub fn apply(&self) -> Result<&'a Path> {
-        // source files
-        // expected layout
-        // defaults.env
-        // template/*
+        // resolve template
         let scratch = try!(tempdir::TempDir::new(TMP_PREFIX));
         try!(clone(self.repo, scratch.path().to_str().unwrap(), None));
-
-        // exclusion rules
-        let exclude = |path: &str| -> bool { path.starts_with(".git") };
 
         match find(scratch.path(), self.defaults) {
             Ok(Some(defaults)) => {
@@ -48,11 +42,14 @@ impl<'a> Template<'a> {
                 let resolved = try!(interact(&map));
                 let data = Context::wraps(&resolved);
 
+                let mut template_dir = scratch.path().to_path_buf();
+                template_dir.push("template");
+
                 // apply handlebars processing
                 let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
                     // /tmp/download_dir/
                     let scratchpath =
-                        &format!("{}{}", scratch.path().to_str().unwrap(), MAIN_SEPARATOR)[..];
+                        &format!("{}{}", template_dir.to_str().unwrap(), MAIN_SEPARATOR)[..];
 
                     // path relatived based on scratch dir
                     let localpath = path.to_str()
@@ -65,23 +62,22 @@ impl<'a> Template<'a> {
                     // rewritten path, based on target dir and eval path
                     let targetpath = self.target.join(evalpath);
 
-                    if !exclude(localpath) {
-                        if path.is_file() {
-                            let mut file = try!(File::open(path));
-                            let mut s = String::new();
-                            try!(file.read_to_string(&mut s));
-                            let mut file = try!(File::create(targetpath));
-                            try!(hbs.template_renderw(&s, &data, &mut file));
-                        } else {
-                            try!(fs::create_dir_all(targetpath))
-                        }
+                    if path.is_file() {
+                        let mut file = try!(File::open(path));
+                        let mut s = String::new();
+                        try!(file.read_to_string(&mut s));
+                        let mut file = try!(File::create(targetpath));
+                        try!(hbs.template_renderw(&s, &data, &mut file));
+                    } else {
+                        try!(fs::create_dir_all(targetpath))
                     }
                     Ok(())
                 };
 
                 try!(create_dir_all(self.target));
                 let mut hbs = bars();
-                try!(walk(&mut hbs, scratch.path(), &apply, false));
+
+                try!(walk(&mut hbs, &template_dir.as_path(), &apply, false));
 
                 Ok(self.target)
             }
