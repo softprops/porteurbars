@@ -29,11 +29,10 @@ pub struct Template {
     /// path to template source
     pub path: PathBuf,
     // holding ref
-    _tmp: tempdir::TempDir
+    _tmp: tempdir::TempDir,
 }
 
 impl Template {
-
     /// resolve template
     pub fn get(repo: &str) -> Result<Template> {
         let scratch = try!(tempdir::TempDir::new(TMP_PREFIX));
@@ -43,7 +42,7 @@ impl Template {
                 Ok(Template {
                     defaults: defaults,
                     path: scratch.path().join(TEMPLATE_DIR),
-                    _tmp: scratch
+                    _tmp: scratch,
                 })
             }
             _ => Err(Error::DefaultsNotFound),

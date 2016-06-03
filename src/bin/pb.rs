@@ -24,8 +24,8 @@ fn main() {
         match Template::get(args.value_of("template").unwrap()) {
             Ok(tmpl) => {
                 tmpl.apply(Path::new(args.value_of("target").unwrap_or("."))).unwrap();
-            },
-            _ => ()
+            }
+            _ => (),
         }
 
         println!("off you go")
