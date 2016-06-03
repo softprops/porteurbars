@@ -18,6 +18,9 @@ const TEMPLATE_DIR: &'static str = "template";
 /// name of file containing key/value pairs representing template defaults
 const DEFAULTS: &'static str = "default.env";
 
+/// A template holds a path to template source and a
+/// file describing the default values associated with
+/// names used in the template
 pub struct Template {
     /// path to defaults file
     pub defaults: PathBuf,
