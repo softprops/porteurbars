@@ -5,35 +5,28 @@ use clap::{App, SubCommand};
 use porteurbars::Template;
 use std::path::Path;
 
+
 fn main() {
 
     let args = App::new("pb")
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
         .subcommand(SubCommand::with_name("apply")
-            .about("applys template to provided data")
-            .args_from_usage("-t, --target=[target] 'Target output directory. Defaults to \
-                              current working directory'
-                                     \
-                              -d, --defaults=[defaults] 'Env file to load default names and \
-                              values from. Defaults to default.env'
-                                     \
-                              -s, --src=[project] 'Project template src base path.Defaults to \
-                              /src'
-                                     <repo> 'git repository \
-                              uri storing template src in full git uri form or github shorthand \
-                              (user/repo)'"))
+                    // apply -t foo/bar .
+            .about("applies provided data to template")
+            .args_from_usage("-t, --template=<template> 'uri of template to apply'
+                              [target] 'directory to write template output to'"))
         .get_matches();
 
     if let Some(args) = args.subcommand_matches("apply") {
-        let project = Template {
-            target: Path::new(args.value_of("target").unwrap_or(".")),
-            defaults: args.value_of("defaults").unwrap_or("default.env"),
-            project: Path::new(args.value_of("project").unwrap_or(".")),
-            repo: args.value_of("repo").unwrap(),
-        };
+        // todo extract resolver
 
-        project.apply().unwrap();
+        match Template::get(args.value_of("template").unwrap()) {
+            Ok(tmpl) => {
+                tmpl.apply(Path::new(args.value_of("target").unwrap_or("."))).unwrap();
+            },
+            _ => ()
+        }
 
         println!("off you go")
     }

@@ -12,79 +12,83 @@ use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::process::{self, Stdio, Command};
 use std::io::{self, Read, Write};
 
+/// file to clone template to
 const TMP_PREFIX: &'static str = "porteurbars";
+
+/// subdirectory containing template source
 const TEMPLATE_DIR: &'static str = "template";
 
+/// name of file containing key/value pairs representing template defaults
+const DEFAULTS: &'static str = "default.env";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub struct Template<'a> {
-    /// target output dir
-    pub target: &'a Path,
-    /// defaults env faile
-    pub defaults: &'a str,
-    /// relative path to project template src
-    pub project: &'a Path,
-    /// remote git repo
-    pub repo: &'a str,
+pub struct Template {
+    /// path to defaults file
+    pub defaults: PathBuf,
+    /// path to template source
+    pub path: PathBuf,
+    // holding ref
+    _tmp: tempdir::TempDir
 }
 
-impl<'a> Template<'a> {
-    /// Apply project template
-    pub fn apply(&self) -> Result<&'a Path> {
-        // resolve template
+impl Template {
+
+    /// resolve template
+    pub fn get(repo: &str) -> Result<Template> {
         let scratch = try!(tempdir::TempDir::new(TMP_PREFIX));
-        try!(clone(self.repo, scratch.path().to_str().unwrap(), None));
-
-        match find(scratch.path(), self.defaults) {
+        try!(clone(repo, scratch.path().to_str().unwrap(), None));
+        match find(scratch.path(), DEFAULTS) {
             Ok(Some(defaults)) => {
-
-                // resolve context
-                let map = try!(parse_defaults(defaults.as_path()));
-                let resolved = try!(interact(&map));
-                let data = Context::wraps(&resolved);
-
-                let mut template_dir = scratch.path().to_path_buf();
-                template_dir.push(TEMPLATE_DIR);
-
-                // apply handlebars processing
-                let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
-                    // /tmp/download_dir/templates
-                    let scratchpath =
-                        &format!("{}{}", template_dir.to_str().unwrap(), MAIN_SEPARATOR)[..];
-
-                    // path relatived based on scratch dir
-                    let localpath = path.to_str()
-                        .unwrap()
-                        .trim_left_matches(scratchpath);
-
-                    // eval path as template
-                    let evalpath = try!(hbs.template_render(&localpath, &resolved));
-
-                    // rewritten path, based on target dir and eval path
-                    let targetpath = self.target.join(evalpath);
-
-                    if path.is_file() {
-                        let mut file = try!(File::open(path));
-                        let mut s = String::new();
-                        try!(file.read_to_string(&mut s));
-                        let mut file = try!(File::create(targetpath));
-                        try!(hbs.template_renderw(&s, &data, &mut file));
-                    } else {
-                        try!(fs::create_dir_all(targetpath))
-                    }
-                    Ok(())
-                };
-
-                try!(create_dir_all(self.target));
-                let mut hbs = bars();
-
-                try!(walk(&mut hbs, &template_dir.as_path(), &apply, false));
-
-                Ok(self.target)
+                Ok(Template {
+                    defaults: defaults,
+                    path: scratch.path().join(TEMPLATE_DIR),
+                    _tmp: scratch
+                })
             }
             _ => Err(Error::DefaultsNotFound),
         }
+    }
+
+    /// Apply template
+    pub fn apply(&self, target: &Path) -> Result<()> {
+        // resolve context
+        let map = try!(parse_defaults(self.defaults.as_path()));
+        let resolved = try!(interact(&map));
+        let data = Context::wraps(&resolved);
+
+        // apply handlebars processing
+        let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
+            // /tmp/download_dir/templates
+            let scratchpath = &format!("{}{}", self.path.to_str().unwrap(), MAIN_SEPARATOR)[..];
+
+            // path relatived based on scratch dir
+            let localpath = path.to_str()
+                .unwrap()
+                .trim_left_matches(scratchpath);
+
+            // eval path as template
+            let evalpath = try!(hbs.template_render(&localpath, &resolved));
+
+            // rewritten path, based on target dir and eval path
+            let targetpath = target.join(evalpath);
+
+            if path.is_file() {
+                let mut file = try!(File::open(path));
+                let mut s = String::new();
+                try!(file.read_to_string(&mut s));
+                let mut file = try!(File::create(targetpath));
+                try!(hbs.template_renderw(&s, &data, &mut file));
+            } else {
+                try!(fs::create_dir_all(targetpath))
+            }
+            Ok(())
+        };
+
+        try!(create_dir_all(target));
+        let mut hbs = bars();
+
+        walk(&mut hbs, &self.path, &apply, false)
     }
 }
 
