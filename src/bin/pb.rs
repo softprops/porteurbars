@@ -12,9 +12,8 @@ fn main() {
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
         .subcommand(SubCommand::with_name("apply")
-                    // apply -t foo/bar .
             .about("applies provided data to template")
-            .args_from_usage("-t, --template=<template> 'uri of template to apply'
+            .args_from_usage("<template> 'uri of template to apply'
                               [target] 'directory to write template output to'"))
         .get_matches();
 
