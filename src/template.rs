@@ -4,19 +4,29 @@ use tempdir::TempDir;
 use handlebars::{Context, Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
 use std::env;
-use std::fs::{self, File, create_dir_all};
+use tar::Archive;
+use std::fs::{self, File, create_dir_all, read_dir, rename};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
-use std::process::{self, Stdio, Command};
 use std::io::{self, Read, Write};
+use hyper::Client;
+use hyper::header::UserAgent;
+use flate2::read::GzDecoder;
+
 
 /// file to clone template to
-const TMP_PREFIX: &'static str = "porteurbars";
-
+// const TMP_PREFIX: &'static str = "porteurbars";
 /// subdirectory containing template source
 const TEMPLATE_DIR: &'static str = "template";
 
 /// name of file containing key/value pairs representing template defaults
 const DEFAULTS: &'static str = "default.env";
+
+pub fn templates_dir() -> Result<PathBuf> {
+    let path = try!(env::home_dir().ok_or(Error::Homeless))
+        .join(".porteurbars")
+        .join("templates");
+    Ok(path)
+}
 
 /// A template holds a path to template source and a
 /// file describing the default values associated with
@@ -26,36 +36,114 @@ pub struct Template {
     pub defaults: PathBuf,
     /// path to template source
     pub path: PathBuf,
-    // holding ref
-    _tmp: TempDir,
 }
 
 impl Template {
-    /// resolve template
-    pub fn get(repo: &str) -> Result<Template> {
-        let scratch = try!(TempDir::new(TMP_PREFIX));
-        try!(clone(repo, scratch.path().to_str().unwrap(), None));
-        match find(scratch.path(), DEFAULTS) {
+    /// validates a template located at `path`
+    pub fn validate(path: &Path) -> Result<bool> {
+        if !path.exists() {
+            return Ok(false);
+        }
+        if !path.join(TEMPLATE_DIR).exists() {
+            return Ok(false);
+        }
+        let tmpdir = try!(TempDir::new("pb-test"));
+        let template = try!(Template::get(path));
+        let defaults = try!(parse_defaults(template.defaults.as_path()));
+        for (k, _) in defaults {
+            env::set_var(k, "test_value")
+        }
+        let _ = try!(template.apply(tmpdir.path()));
+        Ok(true)
+    }
+
+    /// initializes current working directory with porteurbar defaults
+    pub fn init(force: bool) -> Result<()> {
+        if Path::new(TEMPLATE_DIR).exists() && !force {
+            return Ok(());
+        }
+        try!(fs::create_dir(TEMPLATE_DIR));
+        try!(fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(DEFAULTS));
+        Ok(())
+    }
+
+    /// downloads a template from repo (user/repo)
+    /// todo: handle host (ghe), branch, credentials (private repo)
+    pub fn download(repo: &str, tag: Option<&str>) -> Result<bool> {
+        let template_dir = try!(templates_dir()).join(tag.unwrap_or(&repo.replace("/", "-")[..]));
+        if template_dir.exists() {
+            return Ok(true);
+        }
+        let download = try!(TempDir::new("porteurbars-dl"));
+        let host = "api.github.com";
+        let branch = "master";
+        let res = try!(Client::new()
+            .get(&format!("https://{}/repos/{}/tarball/{}", host, repo, branch)[..])
+            .header(UserAgent("porteurbars/0.1.0".to_owned()))
+            .send());
+        try!(Archive::new(try!(GzDecoder::new(res))).unpack(download.path()));
+        let sandbox = try!(try!(read_dir(download.path())).next().unwrap()).path();
+        let valid = try!(Template::validate(&sandbox));
+        if valid {
+            try!(fs::create_dir_all(&template_dir));
+            try!(rename(sandbox, template_dir));
+        }
+        Ok(valid)
+    }
+
+    pub fn list() -> Result<Vec<String>> {
+        let mut names = vec![];
+        let template_dir = try!(templates_dir());
+        for entry in try!(fs::read_dir(template_dir)) {
+            let e = try!(entry);
+            if let Some(name) = e.file_name().to_str() {
+                names.push(name.to_owned());
+            }
+        }
+        Ok(names)
+    }
+
+    pub fn delete(tag: &str) -> Result<bool> {
+        let template_dir = try!(templates_dir()).join(tag);
+        if !template_dir.exists() {
+            return Ok(false);
+        }
+        try!(fs::remove_dir_all(template_dir));
+        Ok(true)
+    }
+
+    /// Resolve template
+    pub fn get(path: &Path) -> Result<Template> {
+        match find(&path, DEFAULTS) {
             Ok(Some(defaults)) => {
                 Ok(Template {
                     defaults: defaults,
-                    path: scratch.path().join(TEMPLATE_DIR),
-                    _tmp: scratch,
+                    path: path.join(TEMPLATE_DIR),
                 })
             }
             _ => Err(Error::DefaultsNotFound),
         }
     }
 
-    /// Apply template
-    pub fn apply(&self, target: &Path) -> Result<()> {
-        // resolve context
+    /// resolve context
+    fn context(&self) -> Result<BTreeMap<String, String>> {
         let map = try!(parse_defaults(self.defaults.as_path()));
         let resolved = try!(interact(&map));
-        let data = Context::wraps(&resolved);
+        Ok(resolved)
+    }
+
+    /// Apply template
+    pub fn apply(&self, target: &Path) -> Result<()> {
+        let ctx = try!(self.context());
+        let data = Context::wraps(&ctx);
 
         // apply handlebars processing
         let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
+
             // /tmp/download_dir/templates
             let scratchpath = &format!("{}{}", self.path.to_str().unwrap(), MAIN_SEPARATOR)[..];
 
@@ -65,19 +153,19 @@ impl Template {
                 .trim_left_matches(scratchpath);
 
             // eval path as template
-            let evalpath = try!(hbs.template_render(&localpath, &resolved));
+            let evalpath = try!(hbs.template_render(&localpath, &ctx));
 
             // rewritten path, based on target dir and eval path
             let targetpath = target.join(evalpath);
 
-            if path.is_file() {
+            if path.is_dir() {
+                try!(fs::create_dir_all(targetpath))
+            } else {
                 let mut file = try!(File::open(path));
                 let mut s = String::new();
                 try!(file.read_to_string(&mut s));
                 let mut file = try!(File::create(targetpath));
                 try!(hbs.template_renderw(&s, &data, &mut file));
-            } else {
-                try!(fs::create_dir_all(targetpath))
             }
             Ok(())
         };
@@ -127,30 +215,14 @@ fn prompt(name: &str, default: &str) -> io::Result<String> {
     }
 }
 
-/// clone a repository to a given location
-fn clone(repo: &str, to: &str, branch: Option<&str>) -> io::Result<process::Output> {
-    let mut git = Command::new("git");
-    git.arg("clone");
-
-    if let Some(b) = branch {
-        git.arg(format!("-b {}", b));
-        git.arg("--single-branch");
-    };
-
-    git.arg(repo)
-        .arg(to)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .output()
-}
-
-fn parse_defaults(p: &Path) -> io::Result<BTreeMap<String, String>> {
+fn parse_defaults(p: &Path) -> Result<BTreeMap<String, String>> {
     let mut map = BTreeMap::new();
     let mut f = try!(File::open(p));
     let mut s = String::new();
     try!(f.read_to_string(&mut s));
 
     let values = s.lines()
+        .filter(|l| !l.starts_with("#"))
         .map(|l| l.split("=").take(2).collect::<Vec<&str>>())
         .collect::<Vec<Vec<&str>>>();
     for pair in values.iter() {
@@ -163,8 +235,8 @@ fn parse_defaults(p: &Path) -> io::Result<BTreeMap<String, String>> {
 }
 
 /// given a set of defaults, attempt to interact with a user
-/// to resolve the parameters that can not be inferred
-fn interact(defaults: &BTreeMap<String, String>) -> io::Result<BTreeMap<String, String>> {
+/// to resolve the parameters that can not be inferred from env
+fn interact(defaults: &BTreeMap<String, String>) -> Result<BTreeMap<String, String>> {
     let mut resolved = BTreeMap::new();
     for (k, v) in defaults {
         let answer = match env::var(k) {
@@ -210,12 +282,22 @@ fn find(target_dir: &Path, target_name: &str) -> io::Result<Option<PathBuf>> {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use regex::Regex;
     use super::*;
+
     #[test]
-    fn test_bars() {
+    fn test_bars_upper() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "porteurbars".to_owned());
         assert_eq!("Hello, PORTEURBARS",
                    bars().template_render("Hello, {{upper name}}", &map).unwrap());
+    }
+
+    #[test]
+    fn test_bars_lower() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "PORTEURBARS".to_owned());
+        assert_eq!("Hello, porteurbars",
+                   bars().template_render("Hello, {{lower name}}", &map).unwrap());
     }
 }
