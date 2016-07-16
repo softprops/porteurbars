@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["softprops <d.tangren@gmail.com>"]
 
 [dependencies]
+difference = "0.4"
 tempdir = "0.3"
 handlebars = "0.16"
 clap = "2.5"

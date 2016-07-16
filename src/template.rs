@@ -1,11 +1,12 @@
 use super::{Error, Result};
 
+use difference;
 use tempdir::TempDir;
 use handlebars::{Context, Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
 use std::env;
 use tar::Archive;
-use std::fs::{self, File, create_dir_all, read_dir, rename};
+use std::fs::{self, File, create_dir_all, read_dir, rename, OpenOptions};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::io::{self, Read, Write};
 use hyper::Client;
@@ -164,8 +165,30 @@ impl Template {
                 let mut file = try!(File::open(path));
                 let mut s = String::new();
                 try!(file.read_to_string(&mut s));
-                let mut file = try!(File::create(targetpath));
-                try!(hbs.template_renderw(&s, &data, &mut file));
+                if targetpath.exists() {
+                    // open file for reading and writing
+                    let mut file = try!(OpenOptions::new().append(false).write(true).read(true).open(&targetpath));
+
+                    // get the current content
+                    let mut current_content = String::new();
+                    try!(file.read_to_string(&mut current_content));
+
+                    // get the target content
+                    let template_eval = try!(hbs.template_render(&s, &ctx));
+
+                    // if there's a diff prompt for change
+                    if template_eval != current_content {
+                        let keep = try!(prompt_diff(current_content.as_ref(), template_eval.as_ref()));
+                        if !keep {
+                            // force truncation of current content
+                            let mut file = try!(File::create(targetpath));
+                            try!(file.write_all(template_eval.as_bytes()));
+                        }
+                    }
+                } else {
+                    let mut file = try!(File::create(targetpath));
+                    try!(hbs.template_renderw(&s, &data, &mut file));
+                }
             }
             Ok(())
         };
@@ -201,6 +224,21 @@ pub fn bars() -> Handlebars {
     hbs
 }
 
+fn prompt_diff(current: &str, new: &str) -> io::Result<bool> {
+    let mut answer = String::new();
+    println!("local changes exists in file <file>");
+    difference::print_diff(current, new, "\n");
+    print!("local changes exists. do you want to keep them?  [y]: ");
+    try!(io::stdout().flush());
+    try!(io::stdin().read_line(&mut answer));
+    let trimmed = answer.trim();
+    if trimmed.is_empty() || trimmed != "n" {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+
+}
 /// prompt for a value defaulting to a given string when an answer is not available
 fn prompt(name: &str, default: &str) -> io::Result<String> {
     let mut answer = String::new();

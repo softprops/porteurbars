@@ -1,9 +1,10 @@
+extern crate difference;
+extern crate flate2;
 extern crate handlebars;
 extern crate hyper;
 extern crate tempdir;
 extern crate regex;
 extern crate tar;
-extern crate flate2;
 
 mod errors;
 pub use errors::Error;
