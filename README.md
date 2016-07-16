@@ -18,7 +18,8 @@ your workflow by generating projects from github hosted handlebars templates.
 
 Porteurbars templates follow a two simple conventions.  
 
-1) Porteurbars assumes a file at the root of a directory called `default.env`, containing
+1) Porteurbars follows the [12-factor philosophy](http://12factor.net/config) for how to configure your templates.
+Porteurbars assumes a file at the root of a directory called `default.env`, containing
 key value pairs that represent your templates environment variables. When applying a template,
 this file will be read and the user will be prompted for each key that isn't defined in their
 current environment. This works well on most systems and allows for promptless template execution
