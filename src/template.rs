@@ -118,12 +118,12 @@ impl Template {
     }
 
     /// Resolve template
-    pub fn get(path: &Path) -> Result<Template> {
+    pub fn get<P>(path: P) -> Result<Template> where P: AsRef<Path> {
         match find(&path, DEFAULTS) {
             Ok(Some(defaults)) => {
                 Ok(Template {
                     defaults: defaults,
-                    path: path.join(TEMPLATE_DIR),
+                    path: path.as_ref().join(TEMPLATE_DIR),
                 })
             }
             _ => Err(Error::DefaultsNotFound),
@@ -305,7 +305,7 @@ fn walk<F>(hbs: &mut Handlebars, dir: &Path, f: &F, include_dir: bool) -> Result
     Ok(())
 }
 
-fn find(target_dir: &Path, target_name: &str) -> io::Result<Option<PathBuf>> {
+fn find<P>(target_dir: P, target_name: &str) -> io::Result<Option<PathBuf>> where P: AsRef<Path> {
     for entry in try!(fs::read_dir(target_dir)) {
         let e = try!(entry);
         if let Some(name) = e.file_name().to_str() {

@@ -3,7 +3,7 @@ extern crate porteurbars;
 
 use clap::{ArgMatches, App, SubCommand};
 use porteurbars::{Result, Template, templates_dir};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 fn run(args: ArgMatches) -> Result<()> {
     match args.subcommand() {
@@ -41,7 +41,12 @@ fn run(args: ArgMatches) -> Result<()> {
         }
         ("apply", Some(args)) => {
             // todo: download if it doesn't exist?
-            let path = templates_dir().unwrap().join(args.value_of("tag").unwrap());
+            let tag = args.value_of("tag").unwrap();
+            let path = if tag.starts_with("/") {
+                PathBuf::from(tag)
+            } else {
+                templates_dir().unwrap().join(tag)
+            };
             let tmpl = try!(Template::get(&path));
             tmpl.apply(Path::new(args.value_of("target").unwrap_or(".")))
                 .unwrap();
