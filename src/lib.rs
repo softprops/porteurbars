@@ -5,6 +5,7 @@ extern crate hyper;
 extern crate tempdir;
 extern crate regex;
 extern crate tar;
+extern crate walkdir;
 
 mod errors;
 pub use errors::Error;

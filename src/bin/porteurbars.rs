@@ -59,7 +59,7 @@ fn run(args: ArgMatches) -> Result<()> {
 
 fn main() {
 
-    let args = App::new("pb")
+    let args = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
         .subcommand(SubCommand::with_name("init")

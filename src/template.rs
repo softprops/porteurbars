@@ -12,6 +12,7 @@ use std::io::{self, Read, Write};
 use hyper::Client;
 use hyper::header::UserAgent;
 use flate2::read::GzDecoder;
+use walkdir::WalkDir;
 
 
 /// file to clone template to
@@ -196,7 +197,11 @@ impl Template {
         try!(create_dir_all(target));
         let mut hbs = bars();
 
-        walk(&mut hbs, &self.path, &apply, false)
+        for entry in WalkDir::new(&self.path).into_iter().skip(1).filter_map(|e| e.ok()) {
+            println!("{:?}", entry.path().display());
+            try!(apply(entry.path(), &mut hbs))
+        }
+        Ok(())
     }
 }
 
@@ -284,25 +289,6 @@ fn interact(defaults: &BTreeMap<String, String>) -> Result<BTreeMap<String, Stri
         resolved.insert(k.clone(), answer);
     }
     Ok(resolved)
-}
-
-fn walk<F>(hbs: &mut Handlebars, dir: &Path, f: &F, include_dir: bool) -> Result<()>
-    where F: Fn(&Path, &mut Handlebars) -> Result<()>
-{
-    if try!(fs::metadata(dir)).is_dir() {
-        if include_dir {
-            try!(f(&dir, hbs));
-        }
-        for entry in try!(fs::read_dir(dir)) {
-            let entry = try!(entry);
-            if try!(fs::metadata(entry.path())).is_dir() {
-                try!(walk(hbs, &entry.path(), f, true));
-            } else {
-                try!(f(&entry.path().as_path(), hbs));
-            }
-        }
-    }
-    Ok(())
 }
 
 fn find<P>(target_dir: P, target_name: &str) -> io::Result<Option<PathBuf>> where P: AsRef<Path> {
