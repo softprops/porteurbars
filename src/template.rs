@@ -1,19 +1,21 @@
 use super::{Error, Result};
 
 use difference;
-use tempdir::TempDir;
+
 use handlebars::{Context, Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
+use flate2::read::GzDecoder;
+use hyper::Client;
+use hyper::header::UserAgent;
 use std::env;
-use tar::Archive;
 use std::fs::{self, File, create_dir_all, read_dir, rename, OpenOptions};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::io::{self, Read, Write};
-use hyper::Client;
-use hyper::header::UserAgent;
-use flate2::read::GzDecoder;
+use tar::Archive;
+use tempdir::TempDir;
 use walkdir::WalkDir;
 
+use super::defaults;
 
 /// file to clone template to
 // const TMP_PREFIX: &'static str = "porteurbars";
@@ -34,8 +36,6 @@ pub fn templates_dir() -> Result<PathBuf> {
 /// file describing the default values associated with
 /// names used in the template
 pub struct Template {
-    /// path to defaults file
-    pub defaults: PathBuf,
     /// path to template source
     pub path: PathBuf,
 }
@@ -51,8 +51,8 @@ impl Template {
         }
         let tmpdir = try!(TempDir::new("pb-test"));
         let template = try!(Template::get(path));
-        let defaults = try!(parse_defaults(template.defaults.as_path()));
-        for (k, _) in defaults {
+        let def = try!(defaults::parse(path.join(DEFAULTS)));
+        for (k, _) in def {
             env::set_var(k, "test_value")
         }
         let _ = try!(template.apply(tmpdir.path()));
@@ -119,21 +119,19 @@ impl Template {
     }
 
     /// Resolve template
-    pub fn get<P>(path: P) -> Result<Template> where P: AsRef<Path> {
+    pub fn get<P>(path: P) -> Result<Template>
+        where P: AsRef<Path>
+    {
         match find(&path, DEFAULTS) {
-            Ok(Some(defaults)) => {
-                Ok(Template {
-                    defaults: defaults,
-                    path: path.as_ref().join(TEMPLATE_DIR),
-                })
-            }
+            Ok(Some(_)) => Ok(Template { path: path.as_ref().join(TEMPLATE_DIR) }),
             _ => Err(Error::DefaultsNotFound),
         }
     }
 
     /// resolve context
     fn context(&self) -> Result<BTreeMap<String, String>> {
-        let map = try!(parse_defaults(self.defaults.as_path()));
+        let defaults_file = self.path.join(DEFAULTS);
+        let map = try!(defaults::parse(defaults_file));
         let resolved = try!(interact(&map));
         Ok(resolved)
     }
@@ -168,7 +166,11 @@ impl Template {
                 try!(file.read_to_string(&mut s));
                 if targetpath.exists() {
                     // open file for reading and writing
-                    let mut file = try!(OpenOptions::new().append(false).write(true).read(true).open(&targetpath));
+                    let mut file = try!(OpenOptions::new()
+                        .append(false)
+                        .write(true)
+                        .read(true)
+                        .open(&targetpath));
 
                     // get the current content
                     let mut current_content = String::new();
@@ -179,7 +181,8 @@ impl Template {
 
                     // if there's a diff prompt for change
                     if template_eval != current_content {
-                        let keep = try!(prompt_diff(current_content.as_ref(), template_eval.as_ref()));
+                        let keep = try!(prompt_diff(current_content.as_ref(),
+                                                    template_eval.as_ref()));
                         if !keep {
                             // force truncation of current content
                             let mut file = try!(File::create(targetpath));
@@ -258,25 +261,6 @@ fn prompt(name: &str, default: &str) -> io::Result<String> {
     }
 }
 
-fn parse_defaults(p: &Path) -> Result<BTreeMap<String, String>> {
-    let mut map = BTreeMap::new();
-    let mut f = try!(File::open(p));
-    let mut s = String::new();
-    try!(f.read_to_string(&mut s));
-
-    let values = s.lines()
-        .filter(|l| !l.starts_with("#"))
-        .map(|l| l.split("=").take(2).collect::<Vec<&str>>())
-        .collect::<Vec<Vec<&str>>>();
-    for pair in values.iter() {
-        if pair.len() == 2 {
-            map.insert(pair[0].trim().to_owned(), pair[1].trim().to_owned());
-        }
-    }
-
-    Ok(map)
-}
-
 /// given a set of defaults, attempt to interact with a user
 /// to resolve the parameters that can not be inferred from env
 fn interact(defaults: &BTreeMap<String, String>) -> Result<BTreeMap<String, String>> {
@@ -291,7 +275,9 @@ fn interact(defaults: &BTreeMap<String, String>) -> Result<BTreeMap<String, Stri
     Ok(resolved)
 }
 
-fn find<P>(target_dir: P, target_name: &str) -> io::Result<Option<PathBuf>> where P: AsRef<Path> {
+fn find<P>(target_dir: P, target_name: &str) -> io::Result<Option<PathBuf>>
+    where P: AsRef<Path>
+{
     for entry in try!(fs::read_dir(target_dir)) {
         let e = try!(entry);
         if let Some(name) = e.file_name().to_str() {

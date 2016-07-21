@@ -7,6 +7,8 @@ extern crate regex;
 extern crate tar;
 extern crate walkdir;
 
+mod defaults;
+
 mod errors;
 pub use errors::Error;
 

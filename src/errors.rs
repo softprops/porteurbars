@@ -2,7 +2,7 @@ use handlebars::{RenderError, TemplateError, TemplateRenderError};
 use std::io;
 use hyper::Error as HyperError;
 
-/// Enumeration of types of errors 
+/// Enumeration of types of errors
 #[derive(Debug)]
 pub enum Error {
     /// No default.env file could be found
