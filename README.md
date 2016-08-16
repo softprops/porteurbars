@@ -4,7 +4,7 @@
 
 Porteurbars is a fast and simple command line interface for templatizing
 your development workflow. Templatize your boilerplate, share your templates
-on github.
+on github. Focus on your idea, not your ideas setup.
 
 ## goals
 
