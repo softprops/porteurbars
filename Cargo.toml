@@ -9,6 +9,8 @@ name = "foo"
 path = "src/bin/porteurbars.rs"
 
 [dependencies]
+log = "*"
+env_logger = "0.3"
 difference = "0.4"
 tempdir = "0.3"
 handlebars = "0.16"

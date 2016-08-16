@@ -1,8 +1,11 @@
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate clap;
 extern crate porteurbars;
 
 use clap::{ArgMatches, App, SubCommand};
-use porteurbars::{Result, Template, templates_dir};
+use porteurbars::{Result, Template, templates_dir, Error};
 use std::path::{Path, PathBuf};
 
 fn run(args: ArgMatches) -> Result<()> {
@@ -32,7 +35,8 @@ fn run(args: ArgMatches) -> Result<()> {
         }
         ("get", Some(args)) => {
             let valid = try!(Template::download(args.value_of("template").unwrap(),
-                                                args.value_of("tag")));
+                                                args.value_of("tag"),
+                                                None));
             if valid {
                 println!("downloaded template")
             } else {
@@ -45,8 +49,10 @@ fn run(args: ArgMatches) -> Result<()> {
             let path = if tag.starts_with("/") {
                 PathBuf::from(tag)
             } else {
+                // todo: if no /, assume _ / tag
                 templates_dir().unwrap().join(tag)
             };
+            debug!("fetching template path {:?}", path);
             let tmpl = try!(Template::get(&path));
             tmpl.apply(Path::new(args.value_of("target").unwrap_or(".")))
                 .unwrap();
@@ -58,7 +64,7 @@ fn run(args: ArgMatches) -> Result<()> {
 }
 
 fn main() {
-
+    env_logger::init().unwrap();
     let args = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
@@ -83,5 +89,9 @@ fn main() {
                               [target] 'directory to write template output to'"))
         .get_matches();
 
-    let _ = run(args).unwrap();
+    match run(args) {
+        Err(Error::Github(_)) => println!("error communicating with github..."),
+        Err(e) => println!("error: {:?}", e),
+        _ => ()
+    };
 }

@@ -6,7 +6,8 @@ use handlebars::{Context, Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
 use flate2::read::GzDecoder;
 use hyper::Client;
-use hyper::header::UserAgent;
+use hyper::header::{Authorization, UserAgent, Bearer};
+use hyper::status::StatusCode;
 use std::env;
 use std::fs::{self, File, create_dir_all, read_dir, rename, OpenOptions};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
@@ -35,6 +36,7 @@ pub fn templates_dir() -> Result<PathBuf> {
 /// A template holds a path to template source and a
 /// file describing the default values associated with
 /// names used in the template
+#[derive(Debug)]
 pub struct Template {
     /// path to template source
     pub path: PathBuf,
@@ -44,9 +46,11 @@ impl Template {
     /// validates a template located at `path`
     pub fn validate(path: &Path) -> Result<bool> {
         if !path.exists() {
+            debug!("path doesn't exist");
             return Ok(false);
         }
         if !path.join(TEMPLATE_DIR).exists() {
+            debug!("template dir doesn't exist");
             return Ok(false);
         }
         let tmpdir = try!(TempDir::new("pb-test"));
@@ -75,38 +79,56 @@ impl Template {
 
     /// downloads a template from repo (user/repo)
     /// todo: handle host (ghe), branch, credentials (private repo)
-    pub fn download(repo: &str, tag: Option<&str>) -> Result<bool> {
-        let template_dir = try!(templates_dir()).join(tag.unwrap_or(&repo.replace("/", "-")[..]));
+    pub fn download(repo: &str, tag: Option<&str>, token: Option<&str>) -> Result<bool> {
+        let template_dir = try!(templates_dir()).join(tag.unwrap_or(repo));
         if template_dir.exists() {
             return Ok(true);
         }
         let download = try!(TempDir::new("porteurbars-dl"));
         let host = "api.github.com";
         let branch = "master";
-        let res = try!(Client::new()
-            .get(&format!("https://{}/repos/{}/tarball/{}", host, repo, branch)[..])
-            .header(UserAgent("porteurbars/0.1.0".to_owned()))
-            .send());
-        try!(Archive::new(try!(GzDecoder::new(res))).unpack(download.path()));
-        let sandbox = try!(try!(read_dir(download.path())).next().unwrap()).path();
-        let valid = try!(Template::validate(&sandbox));
-        if valid {
-            try!(fs::create_dir_all(&template_dir));
-            try!(rename(sandbox, template_dir));
+        let client = Client::new();
+        let builder = client.get(&format!("https://{}/repos/{}/tarball/{}", host, repo, branch)[..])
+            .header(UserAgent("porteurbars/0.1.0".to_owned()));
+        let authenticated = match token {
+            Some(token) => builder.header(Authorization(Bearer { token: token.to_owned() })),
+            _ => builder,
+        };
+        let res = try!(authenticated.send());
+        debug!("github status {:?}", res.status);
+        match res.status {
+            StatusCode::Ok => {
+                try!(Archive::new(try!(GzDecoder::new(res))).unpack(download.path()));
+                let sandbox = try!(try!(read_dir(download.path())).next().unwrap()).path();
+                let valid = try!(Template::validate(&sandbox));
+                if valid {
+                    try!(fs::create_dir_all(&template_dir));
+                    try!(rename(sandbox, template_dir));
+                }
+                Ok(valid)
+            }
+            status => Err(Error::Github(status)),
         }
-        Ok(valid)
+
     }
 
     pub fn list() -> Result<Vec<String>> {
-        let mut names = vec![];
-        let template_dir = try!(templates_dir());
-        for entry in try!(fs::read_dir(template_dir)) {
-            let e = try!(entry);
-            if let Some(name) = e.file_name().to_str() {
-                names.push(name.to_owned());
-            }
-        }
-        Ok(names)
+        Ok(try!(fs::read_dir(try!(templates_dir())))
+            .filter_map(|v| v.ok())
+            .into_iter()
+            .fold(Vec::new(), |mut acc, repo| {
+                let paths = fs::read_dir(repo.path())
+                    .unwrap()
+                    .filter_map(|v| v.ok())
+                    .map(|temp| {
+                        format!("{}/{}",
+                                repo.file_name().to_string_lossy(),
+                                temp.file_name().to_string_lossy())
+                    })
+                    .collect::<Vec<_>>();
+                acc.extend(paths);
+                acc
+            }))
     }
 
     pub fn delete(tag: &str) -> Result<bool> {
@@ -123,7 +145,7 @@ impl Template {
         where P: AsRef<Path>
     {
         match find(&path, DEFAULTS) {
-            Ok(Some(_)) => Ok(Template { path: path.as_ref().join(TEMPLATE_DIR) }),
+            Ok(Some(_)) => Ok(Template { path: path.as_ref().to_path_buf() }),
             _ => Err(Error::DefaultsNotFound),
         }
     }
@@ -145,7 +167,9 @@ impl Template {
         let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
 
             // /tmp/download_dir/templates
-            let scratchpath = &format!("{}{}", self.path.to_str().unwrap(), MAIN_SEPARATOR)[..];
+            let scratchpath = &format!("{}{}",
+                                       self.path.join(TEMPLATE_DIR).to_str().unwrap(),
+                                       MAIN_SEPARATOR)[..];
 
             // path relatived based on scratch dir
             let localpath = path.to_str()
@@ -199,9 +223,11 @@ impl Template {
 
         try!(create_dir_all(target));
         let mut hbs = bars();
-
-        for entry in WalkDir::new(&self.path).into_iter().skip(1).filter_map(|e| e.ok()) {
-            println!("{:?}", entry.path().display());
+        for entry in WalkDir::new(&self.path.join(TEMPLATE_DIR))
+            .into_iter()
+            .skip(1)
+            .filter_map(|e| e.ok()) {
+            debug!("applying {:?}", entry.path().display());
             try!(apply(entry.path(), &mut hbs))
         }
         Ok(())
@@ -248,14 +274,19 @@ fn prompt_diff(current: &str, new: &str) -> io::Result<bool> {
 
 }
 /// prompt for a value defaulting to a given string when an answer is not available
-fn prompt(name: &str, default: &str) -> io::Result<String> {
+fn prompt(name: &str, default: &(String, Option<String>)) -> io::Result<String> {
     let mut answer = String::new();
-    print!("{} [{}]: ", name, default);
+    let &(ref value, ref hint) = default;
+    let hint_str = match hint {
+        &Some(ref value) => format!("({}) ", value),
+        _ => "".to_owned(),
+    };
+    print!("{} {}[{}]: ", name, hint_str, value);
     try!(io::stdout().flush());
     try!(io::stdin().read_line(&mut answer));
     let trimmed = answer.trim();
     if trimmed.trim().is_empty() {
-        Ok(default.to_owned())
+        Ok(value.to_owned())
     } else {
         Ok(trimmed.to_owned())
     }
@@ -263,7 +294,8 @@ fn prompt(name: &str, default: &str) -> io::Result<String> {
 
 /// given a set of defaults, attempt to interact with a user
 /// to resolve the parameters that can not be inferred from env
-fn interact(defaults: &BTreeMap<String, String>) -> Result<BTreeMap<String, String>> {
+fn interact(defaults: &BTreeMap<String, defaults::Value>)
+            -> Result<BTreeMap<String, String>> {
     let mut resolved = BTreeMap::new();
     for (k, v) in defaults {
         let answer = match env::var(k) {

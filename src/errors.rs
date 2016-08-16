@@ -1,6 +1,7 @@
 use handlebars::{RenderError, TemplateError, TemplateRenderError};
 use std::io;
 use hyper::Error as HyperError;
+use hyper::status::StatusCode;
 
 /// Enumeration of types of errors
 #[derive(Debug)]
@@ -19,6 +20,8 @@ pub enum Error {
     Homeless,
     /// Http error fetching template occurred
     Http(HyperError),
+    // Error requesting content from github
+    Github(StatusCode),
 }
 
 

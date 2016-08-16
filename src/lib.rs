@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate log;
 extern crate difference;
 extern crate flate2;
 extern crate handlebars;
