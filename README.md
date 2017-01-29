@@ -1,10 +1,11 @@
 # porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars)
 
 > portable github hosted project templates
+> less assembly required
 
 Porteurbars is a fast and simple command line interface for templatizing
-your development workflow. Templatize your boilerplate, share your templates
-on github. Focus on your idea, not your ideas setup.
+your development workflow. Templatize away your boilerplate and share your templates
+on github. Focus on your idea, not your idea's setup.
 
 ## goals
 
@@ -98,5 +99,26 @@ if you do not provide one.
 
 Finally porteurbars will apply that data to the handlebars templates and write
 all files to the target path.
+
+## alternatives
+
+### [giter8](https://github.com/foundweekends/giter8)
+
+This project is heavily influenced by giter8. porteurbars aims to solve some of
+the issues I've experienced with it. giter8 is a jvm-based cli. To install it you
+need to install another tool called conscript and before that you need to install
+a jvm. porteurbars comes with a single standalone static binary. giter8 uses a
+templating language many are not familiar with but can get acclimated to.
+porteurbars uses handlebars templates in order to be familiar to a larger audience.
+giter8 templates are just git repositories. porteurbars templates are as well.
+
+## [yeoman](http://yeoman.io/)
+
+Yeomon is a similar tool that is more focused providing a scaffold for templates
+authors to wrote node.js modules that serve as generators. porteurbars focuses
+on having template authors just create handlebars templates. Yeomon requires
+you to install the node runtime and also setup and account on npm to share your
+work. porteurbars only requires git repositories. For convenience to facilitate
+sharing it provides convenience for referencing github user repositories.
 
 Doug Tangren (softprops) 2016
