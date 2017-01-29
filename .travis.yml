@@ -1,20 +1,50 @@
-sudo: false
+dist: trusty
 language: rust
-matrix:
-  fast_finish: true
-  include:
-  - rust: nightly
-  - rust: beta
-  - rust: stable
+services: docker
+sudo: required
+
+rust: stable
+
+branches:
+  only:
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+    - master
+
+env:
+  global:
+    # TODO Update this to match the name of your project.
+    - CRATE_NAME=porteurbars
+
+    # default job
+    - TARGET=x86_64-unknown-linux-musl
+
+install:
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
+
 script:
-- cargo build
-- cargo test
+  - bash ci/script.sh
+
+matrix:
+  include:
+    - env: TARGET=x86_64-apple-darwin
+      os: osx
+
+before_deploy:
+  - sh ci/before_deploy.sh
+
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
+
 cache:
   cargo: true
   apt: true
   directories:
   - target/debug/deps
   - target/debug/build
+
 addons:
   apt:
     packages:
@@ -23,6 +53,7 @@ addons:
     - libdw-dev
     - binutils-dev
     - libbfd-dev
+
 after_success: |-
   [ $TRAVIS_RUST_VERSION = stable ] &&
   [ $TRAVIS_BRANCH = master ] &&
