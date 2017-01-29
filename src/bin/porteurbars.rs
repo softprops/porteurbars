@@ -37,7 +37,7 @@ fn main() {
 
 
     match run(args) {
-        Err(e) => println!("error: {:?}", e),
+        Err(e) => println!("error: {}", e),
         _ => (),
     };
 }
