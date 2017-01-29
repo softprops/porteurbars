@@ -31,8 +31,6 @@ matrix:
     - env: TARGET=x86_64-apple-darwin
       os: osx
 
-before_deploy:
-  - sh ci/before_deploy.sh
 
 before_cache:
   # Travis can't cache files that are not readable by "others"
@@ -53,6 +51,28 @@ addons:
     - libdw-dev
     - binutils-dev
     - libbfd-dev
+
+before_deploy:
+  - sh ci/before_deploy.sh
+
+deploy:
+  # TODO update `api_key.secure`
+  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
+  # - Encrypt it: `travis encrypt GH_TOKEN=0123456789012345678901234567890123456789`
+  # - Paste the output down here
+  api_key:
+    secure: $GH_TOKEN
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  on:
+    # TODO Here you can pick which targets will generate binary releases
+    # In this example, there are some targets that are tested using the stable
+    # and nightly channels. This condition makes sure there is only one release
+    # for such targets and that's generated using the stable channel
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+  provider: releases
+  skip_cleanup: true
 
 after_success: |-
   [ $TRAVIS_RUST_VERSION = stable ] &&
