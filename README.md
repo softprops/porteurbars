@@ -115,8 +115,8 @@ giter8 templates are just git repositories. porteurbars templates are as well.
 
 ## [yeoman](http://yeoman.io/)
 
-Yeomon is a similar tool that is more focused providing a scaffold for templates
-authors to wrote node.js modules that serve as generators. porteurbars focuses
+Yeomon is a similar tool that is more focused on providing a scaffolding for template
+authors to write node.js modules that serve as generators. porteurbars focuses
 on having template authors just create handlebars templates. Yeomon requires
 you to install the node runtime and also setup and account on npm to share your
 work. porteurbars only requires git repositories. For convenience to facilitate
