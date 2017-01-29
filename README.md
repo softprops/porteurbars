@@ -1,6 +1,7 @@
 # porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars)
 
 > portable github hosted project templates
+
 > less assembly required
 
 Porteurbars is a fast and simple command line interface for templatizing
@@ -60,7 +61,7 @@ echo "FOO=bar" > default.env
 2) create a directory called `template` under which you define a set of handlebars templates
 
 Porteurbars supports the notion of rendering templates from file content as well as file paths
-so you can also templatize the location of your template files.
+so you can also templatize the location of your template files. See [softprops/mit](https://github.com/softprops/mit) for an example.
 
 ```bash
 $ mkdir  template
