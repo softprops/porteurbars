@@ -29,7 +29,6 @@ fn main() {
     let args = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
-        .about("applies provided data to template")
         .args_from_usage("<repo> 'uri of template to apply'
                           [target] \
                           'directory to write template output to. defaults to current working \

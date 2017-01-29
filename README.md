@@ -27,7 +27,7 @@ current environment. This works well on most systems and allows for promptless t
 as you can specify and environment before running the program
 
 ```bash
-FOO=bar BAR=baz porterbars apply user/repo target
+FOO=bar BAR=baz porteurbars user/repo target
 ```
 
 2) Porteurbars assumes a directory exists called `template` in your template's
@@ -43,7 +43,52 @@ Just upload your templates to github. That's it.
 
 ## Usage
 
-TODO
+### writing templates
 
+Porteurbars defines a convention for writing templates with only two rules
+
+1) create file at the root of a directory called `default.env` which stores
+line-oriented key value pairs
+
+```bash
+$ touch default.env
+echo "FOO=bar" > default.env
+```
+
+
+2) create a directory called `template` under which you define a set of handlebars templates
+
+Porteurbars supports the notion of rendering templates from file content as well as file paths
+so you can also templatize the location of your template files.
+
+```bash
+$ mkdir  template
+echo "Hello {{FOO}}" > template/hello
+```
+
+Publishing a Porteurbars template is has simple has storing this work in a git repo.
+To share these templates with others you can simply push this repo to github.
+
+### applying templates
+
+Install the porteurbars binary and ensure it's on your execution path.
+
+
+porteurbars requires one and optionally a second argument.
+
+The first argument is a reference to a template. The simplest case is using a
+github user/repo. By default porteurbars will render this template in the current
+working directory
+
+
+```bash
+$ porteurbars user/repo
+```
+
+If this is undesirable, you can provide a path to render into
+
+```bash
+$ porteurbars user/repo target_path
+```
 
 Doug Tangren (softprops) 2016
