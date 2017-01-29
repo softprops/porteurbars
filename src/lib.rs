@@ -1,20 +1,21 @@
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate difference;
-extern crate flate2;
 extern crate handlebars;
-extern crate hyper;
 extern crate tempdir;
 extern crate regex;
-extern crate tar;
 extern crate walkdir;
+extern crate git2;
 
 mod defaults;
+pub mod git;
 
 mod errors;
 pub use errors::Error;
 
 mod template;
-pub use template::{Template, templates_dir};
+pub use template::Template;
 
 pub type Result<T> = std::result::Result<T, Error>;

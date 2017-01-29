@@ -5,18 +5,17 @@ authors = ["softprops <d.tangren@gmail.com>"]
 
 [[bin]]
 doc = false
-name = "foo"
+name = "porteurbars"
 path = "src/bin/porteurbars.rs"
 
 [dependencies]
-log = "*"
+lazy_static = "0.1"
+log = "0.3"
 env_logger = "0.3"
 difference = "0.4"
 tempdir = "0.3"
-handlebars = "0.16"
-clap = "2.5"
-regex = "0.1"
-hyper = "0.9"
-tar = "*"
-flate2 = "*"
-walkdir = "0.1"
+handlebars = "0.24"
+clap = "2.20"
+regex = "0.2"
+walkdir = "1.0"
+git2 = "0.6.3"

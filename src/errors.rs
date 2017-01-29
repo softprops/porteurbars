@@ -1,7 +1,7 @@
 use handlebars::{RenderError, TemplateError, TemplateRenderError};
 use std::io;
-use hyper::Error as HyperError;
-use hyper::status::StatusCode;
+// use hyper::Error as HyperError;
+// use hyper::status::StatusCode;
 
 /// Enumeration of types of errors
 #[derive(Debug)]
@@ -18,17 +18,6 @@ pub enum Error {
     TemplateRender(TemplateRenderError),
     /// Home directory could not be resolved
     Homeless,
-    /// Http error fetching template occurred
-    Http(HyperError),
-    // Error requesting content from github
-    Github(StatusCode),
-}
-
-
-impl From<HyperError> for Error {
-    fn from(error: HyperError) -> Error {
-        Error::Http(error)
-    }
 }
 
 impl From<io::Error> for Error {

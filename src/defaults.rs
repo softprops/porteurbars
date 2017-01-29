@@ -3,7 +3,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io::Read;
 
-pub type Value = (String, Option<String>);
+pub type Value = String;
 
 pub fn parse<P>(path: P) -> super::Result<BTreeMap<String, Value>>
     where P: AsRef<Path>
@@ -20,9 +20,7 @@ pub fn parse<P>(path: P) -> super::Result<BTreeMap<String, Value>>
     for pair in values.iter() {
         if pair.len() == 2 {
             let values = pair[1].split("#").take(2).collect::<Vec<_>>();
-            map.insert(pair[0].trim().to_owned(),
-                       (values[0].trim().to_owned(),
-                        values.into_iter().nth(1).map(|v| v.trim().to_owned())));
+            map.insert(pair[0].trim().to_owned(), values[0].trim().to_owned());
         }
     }
 
