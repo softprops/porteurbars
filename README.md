@@ -119,6 +119,8 @@ authors to wrote node.js modules that serve as generators. porteurbars focuses
 on having template authors just create handlebars templates. Yeomon requires
 you to install the node runtime and also setup and account on npm to share your
 work. porteurbars only requires git repositories. For convenience to facilitate
-sharing it provides convenience for referencing github user repositories.
+sharing it provides convenience for referencing github user repositories. Yeomon's
+focus and/or marketing targets front end web development. porteurbars generalizes
+the problem of templating any workflow.
 
 Doug Tangren (softprops) 2016

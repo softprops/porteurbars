@@ -13,11 +13,14 @@ branches:
 
 env:
   global:
-    # TODO Update this to match the name of your project.
     - CRATE_NAME=porteurbars
-
     # default job
     - TARGET=x86_64-unknown-linux-musl
+
+  matrix:
+    - env: TARGET=i686-unknown-linux-musl
+    - env: TARGET=x86_64-apple-darwin
+      os: osx
 
 install:
   - sh ci/install.sh
@@ -25,12 +28,6 @@ install:
 
 script:
   - bash ci/script.sh
-
-matrix:
-  include:
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-
 
 before_cache:
   # Travis can't cache files that are not readable by "others"
