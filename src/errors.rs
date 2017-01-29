@@ -1,5 +1,6 @@
 use handlebars::{RenderError, TemplateError, TemplateRenderError};
 use std::io;
+use git2;
 // use hyper::Error as HyperError;
 // use hyper::status::StatusCode;
 
@@ -18,6 +19,15 @@ pub enum Error {
     TemplateRender(TemplateRenderError),
     /// Home directory could not be resolved
     Homeless,
+    /// Git interaction error
+    Git(git2::Error)
+}
+
+
+impl From<git2::Error> for Error {
+    fn from(error: git2::Error) -> Error {
+        Error::Git(error)
+    }
 }
 
 impl From<io::Error> for Error {

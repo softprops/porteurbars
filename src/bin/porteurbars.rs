@@ -16,7 +16,7 @@ fn run(args: ArgMatches) -> Result<()> {
     let target = args.value_of("target").unwrap_or(".");
     info!("Cloning...");
     let tmp = TempDir::new("porteurbars")?;
-    git::clone(url, &tmp, "master");
+    git::clone(url, &tmp, "master")?;
     info!("Applying template...");
     let template = Template::new(&tmp);
     template.apply(target)?;

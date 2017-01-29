@@ -1,5 +1,6 @@
 extern crate git2;
 extern crate regex;
+use super::Result;
 
 use git2::build::RepoBuilder;
 use std::path::Path;
@@ -46,7 +47,7 @@ impl Url {
 /// a best attempt effort is made to authenticate
 /// requests when required to support private
 /// git repositories
-pub fn clone<P>(repo: Url, dir: P, rev: &str)
+pub fn clone<P>(repo: Url, dir: P, rev: &str) -> Result<()>
     where P: AsRef<Path>
 {
     let mut cb = git2::RemoteCallbacks::new();
@@ -79,8 +80,8 @@ pub fn clone<P>(repo: Url, dir: P, rev: &str)
     RepoBuilder::new()
         .branch(rev)
         .fetch_options(fo)
-        .clone(&url, dir.as_ref())
-        .expect("cloned");
+        .clone(&url, dir.as_ref())?;
 
     debug!("cloned {:?} to {:?}", repo, dir.as_ref());
+    Ok(())
 }
