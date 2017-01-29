@@ -2,6 +2,12 @@
 name = "porteurbars"
 version = "0.0.0"
 authors = ["softprops <d.tangren@gmail.com>"]
+description = "portable git hosted project template"
+documentation = "https://softprops.github.io/porteurbars"
+homepage = "https://github.com/softprops/porteurbars"
+repository = "https://github.com/softprops/porteurbars"
+keywords = ["cli", "github", "template"]
+license = "MIT"
 
 [[bin]]
 doc = false
