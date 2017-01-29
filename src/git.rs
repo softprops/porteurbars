@@ -47,8 +47,8 @@ impl Url {
 /// a best attempt effort is made to authenticate
 /// requests when required to support private
 /// git repositories
-pub fn clone<P>(repo: Url, dir: P, rev: &str) -> Result<()>
-    where P: AsRef<Path>
+pub fn clone<P, R>(repo: Url, dir: P, rev: R) -> Result<()>
+    where P: AsRef<Path>, R: Into<String>
 {
     let mut cb = git2::RemoteCallbacks::new();
     let mut tried_sshkey = false;
@@ -78,7 +78,7 @@ pub fn clone<P>(repo: Url, dir: P, rev: &str) -> Result<()>
         Url::Remote(ref remote) => remote.to_owned()
     };
     RepoBuilder::new()
-        .branch(rev)
+        .branch(&rev.into())
         .fetch_options(fo)
         .clone(&url, dir.as_ref())?;
 
