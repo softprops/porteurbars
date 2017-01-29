@@ -39,6 +39,7 @@ cache:
   directories:
   - target/debug/deps
   - target/debug/build
+  - "$HOME/.rustup"
 
 addons:
   apt:
