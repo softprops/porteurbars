@@ -77,8 +77,7 @@ impl Template {
                 file.read_to_string(&mut s)?;
                 if targetpath.exists() {
                     // open file for reading and writing
-                    let mut file = OpenOptions::new().append(false)
-                        .write(true)
+                    let mut file = OpenOptions::new().write(true)
                         .read(true)
                         .open(&targetpath)?;
 
@@ -91,12 +90,13 @@ impl Template {
 
                     // if there's a diff prompt for change
                     if template_eval != current_content {
-                        let keep = prompt_diff(current_content.as_ref(),
-                                               template_eval.as_ref(),
-                                               &targetpath)?;
+                        let keep = keep_current_content(current_content.as_ref(),
+                                                        template_eval.as_ref(),
+                                                        &targetpath)?;
                         if !keep {
                             // force truncation of current content
-                            let mut file = File::create(targetpath)?;
+                            let mut file =
+                                OpenOptions::new().write(true).truncate(true).open(targetpath)?;
                             file.write_all(template_eval.as_bytes())?;
                         }
                     }
@@ -143,22 +143,18 @@ pub fn bars() -> Handlebars {
     hbs
 }
 
-fn prompt_diff<P>(current: &str, new: &str, file: P) -> io::Result<bool>
+fn keep_current_content<P>(current: &str, new: &str, file: P) -> io::Result<bool>
     where P: AsRef<Path>
 {
     let mut answer = String::new();
-    println!("The following local changes exist in file {}",
+    println!("Conflicts exist with the current version of {}",
              file.as_ref().display());
     difference::print_diff(current, new, "\n");
-    print!("Do you want to keep them? [y/n]: ");
+    print!("Do you want to keep the previous version? [y/n]: ");
     io::stdout().flush()?;
     io::stdin().read_line(&mut answer)?;
-    let trimmed = answer.trim();
-    if trimmed.is_empty() || trimmed != "n" {
-        Ok(true)
-    } else {
-        Ok(false)
-    }
+    let trimmed = answer.trim().to_lowercase();
+    Ok(trimmed.is_empty() || trimmed != String::from("n"))
 }
 
 /// prompt for a value defaulting to a given string when an answer is not available

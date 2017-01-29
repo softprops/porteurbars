@@ -91,4 +91,12 @@ If this is undesirable, you can provide a path to render into
 $ porteurbars user/repo target_path
 ```
 
+porteurbars will clone this template repo and read the defined template
+variables from the default.env file. If any of these variables are not defined
+in your env, porteurbars will prompt you for a value falling back on a default
+if you do not provide one.
+
+Finally porteurbars will apply that data to the handlebars templates and write
+all files to the target path.
+
 Doug Tangren (softprops) 2016
