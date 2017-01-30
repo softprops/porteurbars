@@ -22,14 +22,14 @@ on github. Focus on your idea, not your idea's setup.
 Porteurbars templates follow two simple conventions.  
 
 1) Porteurbars follows the [12-factor philosophy](http://12factor.net/config) for how to configure your templates.
-Porteurbars assumes a file at the root of a directory called `default.env`, containing
+Porteurbars assumes a file at the root of a directory called `default.env` exists, containing
 key value pairs that represent your templates environment variables. When applying a template,
 this file will be read and the user will be prompted for each key that isn't defined in their
 current environment. This works well on most systems and allows for promptless template execution
 as you can specify and environment before running the program
 
 ```bash
-FOO=bar BAR=baz porteurbars user/repo target
+$ FOO=bar BAR=baz porteurbars user/repo target
 ```
 
 2) Porteurbars assumes a directory exists called `template` in your template's
@@ -54,7 +54,7 @@ line-oriented key value pairs
 
 ```bash
 $ touch default.env
-echo "FOO=bar" > default.env
+$ echo "FOO=bar" > default.env
 ```
 
 
@@ -65,7 +65,7 @@ so you can also templatize the location of your template files. See [softprops/m
 
 ```bash
 $ mkdir  template
-echo "Hello {{FOO}}" > template/hello
+$ echo "Hello {{FOO}}" > template/hello
 ```
 
 Publishing a Porteurbars template is has simple has storing this work in a git repo.
