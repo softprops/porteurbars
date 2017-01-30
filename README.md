@@ -67,7 +67,9 @@ prompted for whether or not you wish to keep those local changes.
 
 ## template hosting
 
-Just upload your templates to github. That's it.
+Just upload your templates to [github](https://github.com/). That's it.
+
+![](github.png)
 
 ## Usage
 
