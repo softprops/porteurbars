@@ -4,8 +4,8 @@
 
 > less assembly required
 
-Porteurbars is a fast and simple command line interface for templatizing
-your development workflow. Templatize away your boilerplate and share your templates
+Porteurbars is a fast and simple command line interface for sharing templatized
+your development workflows. Stop repeating yourself. Templatize away your boilerplate and share your templates
 on github. Focus on your idea, not your idea's setup.
 
 ## goals
@@ -21,7 +21,7 @@ on github. Focus on your idea, not your idea's setup.
 
 ### github releases
 
-You can get up and going download a binary directly from [github releases](https://github.com/softprops/porteurbars/releases).
+You can get up and going by downloading a binary directly from [github releases](https://github.com/softprops/porteurbars/releases).
 
 ```bash
 $ cd $HOME/bin
