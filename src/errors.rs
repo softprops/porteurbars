@@ -20,7 +20,7 @@ pub enum Error {
     /// Home directory could not be resolved
     Homeless,
     /// Git interaction error
-    Git(git2::Error)
+    Git(git2::Error),
 }
 
 impl ::std::error::Error for Error {
@@ -32,7 +32,7 @@ impl ::std::error::Error for Error {
             Error::Template(ref e) => e.description(),
             Error::TemplateRender(ref e) => e.description(),
             Error::Homeless => "Could not resolve home directory",
-            Error::Git(ref e) => e.description()
+            Error::Git(ref e) => e.description(),
 
         }
     }

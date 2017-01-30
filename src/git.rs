@@ -6,11 +6,11 @@ use git2::build::RepoBuilder;
 use std::path::Path;
 use regex::Regex;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Url {
     Local(String),
     Github(String, String),
-    Remote(String)
+    Remote(String),
 }
 
 impl Url {
@@ -33,7 +33,8 @@ impl Url {
                 } else {
                     None
                 }
-            }).or_else(|| {
+            })
+            .or_else(|| {
                 GH.captures(txt)
                     .map(|caps| {
                         Url::Github(caps.get(1).unwrap().as_str().to_owned(),
@@ -48,7 +49,8 @@ impl Url {
 /// requests when required to support private
 /// git repositories
 pub fn clone<P, R>(repo: Url, dir: P, rev: R) -> Result<()>
-    where P: AsRef<Path>, R: Into<String>
+    where P: AsRef<Path>,
+          R: Into<String>
 {
     let mut cb = git2::RemoteCallbacks::new();
     let mut tried_sshkey = false;
@@ -75,13 +77,38 @@ pub fn clone<P, R>(repo: Url, dir: P, rev: R) -> Result<()>
     let url = match repo {
         Url::Github(ref owner, ref repo) => format!("git://github.com/{}/{}.git", owner, repo),
         Url::Local(ref path) => path.to_owned(),
-        Url::Remote(ref remote) => remote.to_owned()
+        Url::Remote(ref remote) => remote.to_owned(),
     };
-    RepoBuilder::new()
-        .branch(&rev.into())
+    RepoBuilder::new().branch(&rev.into())
         .fetch_options(fo)
         .clone(&url, dir.as_ref())?;
 
     debug!("cloned {:?} to {:?}", repo, dir.as_ref());
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_authenticated_ssh_url() {
+        assert_eq!(Url::from_str("git@github.com:user/repo.git"), Some(Url::Remote(String::from("git@github.com:user/repo.git"))))
+    }
+
+    #[test]
+    fn test_public_ssh_url() {
+        assert_eq!(Url::from_str("git://github.com:user/repo.git"), Some(Url::Remote(String::from("git://github.com:user/repo.git"))))
+    }
+
+    #[test]
+    fn test_https_url() {
+        assert_eq!(Url::from_str("https://github.com/user/repo.git"), Some(Url::Remote(String::from("https://github.com/user/repo.git"))))
+    }
+
+    #[test]
+    fn test_github_url() {
+        assert_eq!(Url::from_str("user/repo"), Some(Url::Github(String::from("user"), String::from("repo"))))
+    }
 }

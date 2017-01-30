@@ -39,7 +39,7 @@ impl Template {
     /// resolve context
     fn context(&self) -> Result<BTreeMap<String, String>> {
         let defaults_file = self.path.join(DEFAULTS);
-        let map = defaults::parse(defaults_file)?;
+        let map = defaults::from_file(defaults_file)?;
         let resolved = interact(&map)?;
         Ok(resolved)
     }
@@ -173,7 +173,7 @@ fn prompt(name: &str, default: &String) -> io::Result<String> {
 
 /// given a set of defaults, attempt to interact with a user
 /// to resolve the parameters that can not be inferred from env
-fn interact(defaults: &BTreeMap<String, defaults::Value>) -> Result<BTreeMap<String, String>> {
+fn interact(defaults: &defaults::Defaults) -> Result<BTreeMap<String, String>> {
     let mut resolved = BTreeMap::new();
     for (k, v) in defaults {
         let answer = match env::var(k) {
@@ -188,7 +188,6 @@ fn interact(defaults: &BTreeMap<String, defaults::Value>) -> Result<BTreeMap<Str
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
-    use regex::Regex;
     use super::*;
 
     #[test]
