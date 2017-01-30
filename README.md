@@ -17,6 +17,16 @@ on github. Focus on your idea, not your idea's setup.
 * focused feature set
 * fun
 
+## installation
+
+### github releases
+
+```bash
+curl -L "https://github.com/softprops/porteurbars/releases/download/v0.0.1/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+  | tar -xv \
+  > porteurbars
+```
+
 ## assumptions
 
 Porteurbars templates follow two simple conventions.  
