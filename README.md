@@ -21,10 +21,26 @@ on github. Focus on your idea, not your idea's setup.
 
 ### github releases
 
+You can get up and going download a binary directly from [github releases](https://github.com/softprops/porteurbars/releases).
+
 ```bash
-curl -L "https://github.com/softprops/porteurbars/releases/download/v0.0.1/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
-  | tar -xv \
-  > porteurbars
+$ cd $HOME/bin
+$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.0.1/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+  | tar -xz
+$ porteurbars --help
+  porteurbars 0.0.1
+  portable git hosted project templates
+
+  USAGE:
+      porteurbars <repo> [ARGS]
+
+  FLAGS:
+      -h, --help       Prints help information
+      -V, --version    Prints version information
+
+  ARGS:
+      <repo>      uri of template to apply
+      <target>    directory to write template output to. defaults to current working directory
 ```
 
 ## assumptions
