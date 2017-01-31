@@ -19,6 +19,12 @@ on github. Focus on your idea, not your idea's setup.
 
 ## installation
 
+### homebrew (on osx)
+
+```bash
+$ brew install softprops/tools/porteurbars
+```
+
 ### github releases
 
 You can get up and going by downloading a binary directly from [github releases](https://github.com/softprops/porteurbars/releases).
@@ -151,5 +157,6 @@ work. porteurbars only requires git repositories. For convenience to facilitate
 sharing it provides convenience for referencing github user repositories. Yeomon's
 focus and/or marketing targets front end web development. porteurbars generalizes
 the problem of templating any workflow.
+
 
 Doug Tangren (softprops) 2016
