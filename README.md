@@ -1,14 +1,17 @@
 # porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars)
 
-> portable github hosted project templates
 
 > less assembly required
 
-Porteurbars is a fast and simple command line interface for sharing templatized
-your development workflows. Stop repeating yourself. Templatize away your boilerplate and share your templates
-on github. Focus on your idea, not your idea's setup.
+> portable github hosted project templates
 
-## goals
+Porteurbars is a command line tool for sharing and applying reusable project
+templates that remove tedious boilerplate.
+
+This allows you to spend less time in the bikeshed and more time on the road,
+the part that matters.
+
+## Goals
 
 * no runtime dependencies
 * use existing and familiar tools: handlebars, github
@@ -17,7 +20,7 @@ on github. Focus on your idea, not your idea's setup.
 * focused feature set
 * fun
 
-## installation
+## Installation
 
 ### homebrew (on osx)
 
@@ -79,9 +82,9 @@ Just upload your templates to [github](https://github.com/). That's it.
 
 ## Usage
 
-### writing templates
+### Creating templates
 
-Porteurbars defines a convention for writing templates with only two rules
+Porteurbars defines a convention for writing templates with only two rules.
 
 1) create file at the root of a directory called `default.env` which stores
 line-oriented key value pairs
@@ -90,7 +93,6 @@ line-oriented key value pairs
 $ touch default.env
 $ echo "FOO=bar" > default.env
 ```
-
 
 2) create a directory called `template` under which you define a set of handlebars templates
 
@@ -102,13 +104,12 @@ $ mkdir  template
 $ echo "Hello {{FOO}}" > template/hello
 ```
 
-Publishing a Porteurbars template is has simple has storing this work in a git repo.
+Publishing a Porteurbars template is as simple has storing this work in a git repo.
 To share these templates with others you can simply push this repo to github.
 
-### applying templates
+### Applying templates
 
-Install the porteurbars binary and ensure it's on your execution path.
-
+[Install](#Installation) the porteurbars binary and ensure it's on your execution path.
 
 porteurbars requires one and optionally a second argument.
 
@@ -135,28 +136,45 @@ if you do not provide one.
 Finally porteurbars will apply that data to the handlebars templates and write
 all files to the target path.
 
-## alternatives
+## Alternatives
 
 ### [giter8](https://github.com/foundweekends/giter8)
 
 This project is heavily influenced by giter8. porteurbars aims to solve some of
-the issues I've experienced with it. giter8 is a jvm-based cli. To install it you
-need to install another tool called conscript and before that you need to install
-a jvm. porteurbars comes with a single standalone static binary. giter8 uses a
-templating language many are not familiar with but can get acclimated to.
-porteurbars uses handlebars templates in order to be familiar to a larger audience.
+the issues I've experienced with it. giter8 is a jvm-based cli. To use it, you
+first need to install another tool called conscript, which itself requires dependencies
+on the underlying engine of sbt ( the scala build tool ), and before that you need to install
+a modern version of java's JRE (not to be confused with JDK!).
+The sum total of this can be hundreds of megabytes you have to download over
+the internet before your users can get going.
+
+porteurbars comes with a single standalone static binary, weighing in at about, 4M.
+
+giter8 uses a templating language many are not familiar with, but can get acclimated to,
+author templates. porteurbars uses [handlebars templates](http://handlebarsjs.com/) for templatging
+in order to be familiar to a larger audience.
+
 giter8 templates are just git repositories. porteurbars templates are as well.
+
+giter8 defines a similar set of conventions. You store your templates defaults in a java
+properties file called default.properties and template source under a mvn-style src/main/g8 directory.
+
+porteurbars opts to read configuration from the environment and, as such, uses a default.env file.
+porteurbars ties to steer away from java's mvn conventions for a simpler directory structure, a "template" folder
 
 ## [yeoman](http://yeoman.io/)
 
 Yeomon is a similar tool that is more focused on providing a scaffolding for template
-authors to write node.js modules that serve as generators. porteurbars focuses
-on having template authors just create handlebars templates. Yeomon requires
+authors to write node.js modules that serve as generators to generate project boilerpate.
+
+porteurbars focuses on a more general audience. To author templates,
+the only required knowledge is handlebars. Yeomon requires
 you to install the node runtime and also setup and account on npm to share your
-work. porteurbars only requires git repositories. For convenience to facilitate
-sharing it provides convenience for referencing github user repositories. Yeomon's
-focus and/or marketing targets front end web development. porteurbars generalizes
-the problem of templating any workflow.
+work. porteurbars only requires git repositories. For convenience, to facilitate
+sharing on github, it provides convenience for referencing github user repositories (porteurbars user/repo).
+
+Yeomon's focus and/or marketing targets front end web development. porteurbars generalizes
+the problem of templating away boilerplate for any time of project.
 
 
 Doug Tangren (softprops) 2016
