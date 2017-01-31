@@ -136,6 +136,36 @@ if you do not provide one.
 Finally porteurbars will apply that data to the handlebars templates and write
 all files to the target path.
 
+
+### Composing and collision detection
+
+Porteurbars is designed in a way that let's you compose project templates. What does that mean?
+Most tools will blow away a target directly when applying templates. Porteurbars will not.
+Instead if will detect changes if a template was previously applied and prompt you before
+writing the new version. Porteurbars also allows you to "overlay" different independent
+ templates within a project structure which allows you to compose your project templates to
+ avoid the one size fits all problem of duplicate but similar templates in the wild.
+
+## Areas of contribution
+
+### handlebars helpers
+
+The choice of handlebars allows for template level "helpers". Currently only a minimal set
+of helpers beyond the built-ins are provided. `upper` and `lower`.
+
+
+```hbs
+{{ upper foo }} {{ lower bar }}
+```
+
+More are planned in the future, but I plan to let demand drive additions.
+
+### Ideas!
+
+I'd like to hear about your ideas and use cases. It would be useful to assemble a directory
+of known templates. The choice of git(hub) for hosting templates keeps these
+decentralized which is good but hinders discovery of existing templates.
+
 ## Alternatives
 
 ### [giter8](https://github.com/foundweekends/giter8)
