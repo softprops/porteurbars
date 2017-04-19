@@ -1,4 +1,4 @@
-use super::Result;
+use errors::{Result, ResultExt};
 
 use difference;
 
@@ -31,53 +31,78 @@ pub struct Template {
 
 impl Template {
     pub fn new<P>(path: P) -> Template
-        where P: AsRef<Path>
+    where
+        P: AsRef<Path>,
     {
         Template { path: path.as_ref().to_path_buf() }
     }
 
     /// resolve context
-    fn context(&self) -> Result<BTreeMap<String, String>> {
-        let defaults_file = self.path.join(DEFAULTS);
-        let map = defaults::from_file(defaults_file)?;
-        let resolved = interact(&map)?;
+    fn context<R>(&self, root: &Option<R>) -> Result<BTreeMap<String, String>>
+    where
+        R: AsRef<Path>,
+    {
+        let path = &self.path;
+        let defaults_file = root.as_ref()
+            .map(|r| path.join(r))
+            .unwrap_or(path.to_path_buf())
+            .join(DEFAULTS);
+        let map = defaults::from_file(defaults_file.clone())
+            .chain_err(
+                move || {
+                    format!(
+                        "failed to parse credentials from file {}",
+                        defaults_file.to_string_lossy()
+                    )
+                },
+            )?;
+        let resolved = interact(&map).chain_err(|| "failed to parse defaults")?;
         Ok(resolved)
     }
 
     /// Apply template
-    pub fn apply<P>(&self, target: P) -> Result<()>
-        where P: AsRef<Path>
+    pub fn apply<P, R>(&self, target: P, root: Option<R>) -> Result<()>
+    where
+        P: AsRef<Path>,
+        R: AsRef<Path>,
     {
-        let ctx = self.context()?;
+        let ctx = self.context(&root)?;
+        let adjusted_path = root.as_ref()
+            .map(|r| self.path.join(r))
+            .unwrap_or(self.path.to_path_buf());
 
         // apply handlebars processing
         let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
 
             // /tmp/download_dir/templates
-            let scratchpath = &format!("{}{}",
-                                       self.path.join(TEMPLATE_DIR).to_str().unwrap(),
-                                       MAIN_SEPARATOR)[..];
+            let scratchpath = &format!(
+                "{}{}",
+                adjusted_path.join(TEMPLATE_DIR).to_str().unwrap(),
+                MAIN_SEPARATOR
+            )
+                                   [..];
 
             // path relatived based on scratch dir
-            let localpath = path.to_str()
-                .unwrap()
-                .trim_left_matches(scratchpath);
+            let localpath = path.to_str().unwrap().trim_left_matches(scratchpath);
 
             // eval path as template
-            let evalpath = hbs.template_render(&localpath, &ctx)?;
+            let evalpath = hbs.template_render(&localpath, &ctx)
+                .chain_err(|| format!("failed to render template {}", localpath))?;
 
             // rewritten path, based on target dir and eval path
             let targetpath = target.as_ref().join(evalpath);
 
             if path.is_dir() {
-                fs::create_dir_all(targetpath)?
+                fs::create_dir_all(targetpath)
+                    .chain_err(|| format!("failed to create directory {}", path.to_string_lossy()))?
             } else {
                 let mut file = File::open(path)?;
                 let mut s = String::new();
                 file.read_to_string(&mut s)?;
                 if targetpath.exists() {
                     // open file for reading and writing
-                    let mut file = OpenOptions::new().write(true)
+                    let mut file = OpenOptions::new()
+                        .write(true)
                         .read(true)
                         .open(&targetpath)?;
 
@@ -90,13 +115,17 @@ impl Template {
 
                     // if there's a diff prompt for change
                     if template_eval != current_content {
-                        let keep = keep_current_content(current_content.as_ref(),
-                                                        template_eval.as_ref(),
-                                                        &targetpath)?;
+                        let keep = keep_current_content(
+                            current_content.as_ref(),
+                            template_eval.as_ref(),
+                            &targetpath,
+                        )?;
                         if !keep {
                             // force truncation of current content
-                            let mut file =
-                                OpenOptions::new().write(true).truncate(true).open(targetpath)?;
+                            let mut file = OpenOptions::new()
+                                .write(true)
+                                .truncate(true)
+                                .open(targetpath)?;
                             file.write_all(template_eval.as_bytes())?;
                         }
                     }
@@ -110,10 +139,10 @@ impl Template {
 
         create_dir_all(target.as_ref())?;
         let mut hbs = bars();
-        for entry in WalkDir::new(&self.path.join(TEMPLATE_DIR))
-            .into_iter()
-            .skip(1)
-            .filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(&adjusted_path.join(TEMPLATE_DIR))
+                .into_iter()
+                .skip(1)
+                .filter_map(|e| e.ok()) {
             debug!("applying {:?}", entry.path().display());
             apply(entry.path(), &mut hbs)?
         }
@@ -124,17 +153,23 @@ impl Template {
 pub fn bars() -> Handlebars {
     let mut hbs = Handlebars::new();
     fn transform<F>(bars: &mut Handlebars, name: &str, f: F)
-        where F: 'static + Fn(&str) -> String + Sync + Send
+    where
+        F: 'static + Fn(&str) -> String + Sync + Send,
     {
-        bars.register_helper(name,
-                             Box::new(move |h: &Helper,
-                                            _: &Handlebars,
-                                            rc: &mut RenderContext|
-                                            -> ::std::result::Result<(), RenderError> {
-                                 let value = h.params().get(0).unwrap().value();
-                                 rc.writer.write(f(value.as_string().unwrap()).as_bytes())?;
-                                 Ok(())
-                             }));
+        bars.register_helper(
+            name,
+            Box::new(
+                move |h: &Helper,
+                      _: &Handlebars,
+                      rc: &mut RenderContext|
+                      -> ::std::result::Result<(), RenderError> {
+                    let value = h.params().get(0).unwrap().value();
+                    rc.writer
+                        .write(f(value.as_string().unwrap()).as_bytes())?;
+                    Ok(())
+                },
+            ),
+        );
     }
 
     transform(&mut hbs, "upper", str::to_uppercase);
@@ -144,12 +179,15 @@ pub fn bars() -> Handlebars {
 }
 
 fn keep_current_content<P>(current: &str, new: &str, file: P) -> io::Result<bool>
-    where P: AsRef<Path>
+where
+    P: AsRef<Path>,
 {
     let mut answer = String::new();
-    println!("Conflicts exist with the current version of {}",
-             file.as_ref().display());
-    difference::print_diff(current, new, "\n");
+    println!(
+        "Conflicts exist with the current version of {}\n",
+        file.as_ref().display()
+    );
+    println!("{}", difference::Changeset::new(current, new, "\n"));
     print!("Do you want to keep the previous version? [y/n]: ");
     io::stdout().flush()?;
     io::stdin().read_line(&mut answer)?;
@@ -194,15 +232,23 @@ mod tests {
     fn test_bars_upper() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "porteurbars".to_owned());
-        assert_eq!("Hello, PORTEURBARS",
-                   bars().template_render("Hello, {{upper name}}", &map).unwrap());
+        assert_eq!(
+            "Hello, PORTEURBARS",
+            bars()
+                .template_render("Hello, {{upper name}}", &map)
+                .unwrap()
+        );
     }
 
     #[test]
     fn test_bars_lower() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "PORTEURBARS".to_owned());
-        assert_eq!("Hello, porteurbars",
-                   bars().template_render("Hello, {{lower name}}", &map).unwrap());
+        assert_eq!(
+            "Hello, porteurbars",
+            bars()
+                .template_render("Hello, {{lower name}}", &map)
+                .unwrap()
+        );
     }
 }

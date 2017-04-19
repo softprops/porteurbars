@@ -8,6 +8,8 @@ extern crate tempdir;
 extern crate regex;
 extern crate walkdir;
 extern crate git2;
+#[macro_use]
+extern crate error_chain;
 
 mod defaults;
 pub mod git;
