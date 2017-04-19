@@ -11,16 +11,15 @@ use porteurbars::{Result, Template};
 use porteurbars::git;
 
 fn run(args: ArgMatches) -> Result<()> {
-    let repo = args.value_of("repo").unwrap();
-    let url = porteurbars::git::Url::from_str(repo).unwrap();
+    let repo = args.value_of("repository").unwrap();
+    let url = porteurbars::git::Url::from_str(repo)?;
     let target = args.value_of("target").unwrap_or(".");
     let root = args.value_of("template_root");
     info!("Cloning...");
     let tmp = TempDir::new("porteurbars")?;
     git::clone(url, &tmp, "master")?;
     info!("Applying template...");
-    let template = Template::new(&tmp);
-    template.apply(target, root)?;
+    Template::new(&tmp).apply(target, root)?;
     println!("off you go");
     Ok(())
 }
@@ -30,15 +29,23 @@ fn main() {
     let args = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
-        .arg(Arg::with_name("repo").value_name("repo")
-        .required(true).help("uri of template to apply"))
+        .arg(Arg::with_name("repository").value_name("repository")
+        .required(true).help(
+            "uri of template to apply.
+example uris
+github: user/repo
+ local: file:///path/to/repo
+   git: git@github.com:user/repo.git"
+        ))
         .arg(Arg::with_name("target")
             .value_name("target")
             .help("directory to write template output to. defaults to current working directory"))
-        .arg(Arg::with_name("template_root")
-                .long("template_root")
+        .arg(Arg::with_name("base")
+                .short("b")
+                .long("base")
+                .value_name("base_directory")
                 .takes_value(true)
-                .help("directory within <repo> to use as root. defaults to base of repo"))
+                .help("directory within <repository> to use as root. defaults to base of repo"))
         .get_matches();
 
 

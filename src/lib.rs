@@ -15,9 +15,7 @@ mod defaults;
 pub mod git;
 
 mod errors;
-pub use errors::Error;
+pub use errors::{Error, Result, ResultExt};
 
 mod template;
 pub use template::Template;
-
-pub type Result<T> = std::result::Result<T, Error>;

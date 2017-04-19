@@ -1,6 +1,6 @@
 extern crate git2;
 extern crate regex;
-use errors::{Result, ResultExt};
+use errors::{ErrorKind, Result, ResultExt};
 
 use git2::build::RepoBuilder;
 use std::path::Path;
@@ -17,7 +17,7 @@ impl Url {
     /// supports two types git of repository urls
     /// local repositories that start with file://
     /// and github repositories ower/repo
-    pub fn from_str(txt: &str) -> Option<Url> {
+    pub fn from_str(txt: &str) -> Result<Url> {
         lazy_static! {
             static ref LOCAL: Regex = Regex::new(r#"^file://(\S+)$"#).unwrap();
             static ref GH: Regex = Regex::new(r#"^([^\s/]+)/([^\s/]+?)$"#).unwrap();
@@ -48,6 +48,7 @@ impl Url {
                         )
                 },
             )
+            .ok_or(ErrorKind::InvalidUri(txt.into()).into())
     }
 }
 
@@ -149,6 +150,9 @@ mod tests {
 
     #[test]
     fn test_local_uri() {
-        assert_eq!(Url::from_str("file:///some/path/foo.git"), Some(Url::Local(String::from("/some/path/foo.git"))))
+        assert_eq!(
+            Url::from_str("file:///some/path/foo.git"),
+            Some(Url::Local(String::from("/some/path/foo.git")))
+        )
     }
 }

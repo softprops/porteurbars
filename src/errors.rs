@@ -23,5 +23,9 @@ error_chain! {
             description("home directory not defined")
             display("home directory not defined")
         }
+        InvalidUri(t: String) {
+            description("invalid uri")
+            display("invalid template uri {}", t)
+        }
     }
 }
