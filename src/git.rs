@@ -19,7 +19,7 @@ impl Url {
     /// and github repositories ower/repo
     pub fn from_str(txt: &str) -> Option<Url> {
         lazy_static! {
-            static ref LOCAL: Regex = Regex::new(r#"^file://(\S+)$""#).unwrap();
+            static ref LOCAL: Regex = Regex::new(r#"^file://(\S+)$"#).unwrap();
             static ref GH: Regex = Regex::new(r#"^([^\s/]+)/([^\s/]+?)$"#).unwrap();
             static ref REMOTE: Regex = Regex::new(
                 r#"^(git[@|://].*)|(https://.*)|(http://.*)|(ssh://.*)$"#
@@ -145,5 +145,10 @@ mod tests {
             Url::from_str("user/repo"),
             Some(Url::Github(String::from("user"), String::from("repo")))
         )
+    }
+
+    #[test]
+    fn test_local_uri() {
+        assert_eq!(Url::from_str("file:///some/path/foo.git"), Some(Url::Local(String::from("/some/path/foo.git"))))
     }
 }
