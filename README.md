@@ -34,22 +34,29 @@ You can get up and going by downloading a binary directly from [github releases]
 
 ```bash
 $ cd $HOME/bin
-$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.0.1/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.0.2/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
   | tar -xz
 $ porteurbars --help
-  porteurbars 0.0.1
-  portable git hosted project templates
+porteurbars 0.0.2
+portable git hosted project templates
 
-  USAGE:
-      porteurbars <repo> [ARGS]
+USAGE:
+    porteurbars [OPTIONS] <repository> [<target>]
 
-  FLAGS:
-      -h, --help       Prints help information
-      -V, --version    Prints version information
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
 
-  ARGS:
-      <repo>      uri of template to apply
-      <target>    directory to write template output to. defaults to current working directory
+OPTIONS:
+    -b, --base <base_directory>    directory within <repository> to use as root. defaults to base of repo
+
+ARGS:
+    <repository>    uri of template to apply.
+                    example uris
+                    github: user/repo
+                     local: file:///path/to/repo
+                       git: git@github.com:user/repo.git
+    <target>        directory to write template output to. defaults to current working directory
 ```
 
 ## assumptions
