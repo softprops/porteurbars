@@ -28,26 +28,19 @@ impl Url {
         LOCAL
             .captures(txt)
             .map(|caps| Url::Local(caps.get(1).unwrap().as_str().to_owned()))
-            .or_else(
-                || if REMOTE.is_match(txt) {
-                    Some(Url::Remote(txt.to_string()))
-                } else {
-                    None
-                },
-            )
-            .or_else(
-                || {
-                    GH.captures(txt)
-                        .map(
-                            |caps| {
-                                Url::Github(
-                                    caps.get(1).unwrap().as_str().to_owned(),
-                                    caps.get(2).unwrap().as_str().to_owned(),
-                                )
-                            },
-                        )
-                },
-            )
+            .or_else(|| if REMOTE.is_match(txt) {
+                Some(Url::Remote(txt.to_string()))
+            } else {
+                None
+            })
+            .or_else(|| {
+                GH.captures(txt).map(|caps| {
+                    Url::Github(
+                        caps.get(1).unwrap().as_str().to_owned(),
+                        caps.get(2).unwrap().as_str().to_owned(),
+                    )
+                })
+            })
             .ok_or(ErrorKind::InvalidUri(txt.into()).into())
     }
 }
@@ -63,29 +56,28 @@ where
 {
     let mut cb = git2::RemoteCallbacks::new();
     let mut tried_sshkey = false;
-    cb.credentials(
-        move |url, username, cred_type| {
-            if cred_type.contains(git2::USER_PASS_PLAINTEXT) {
-                let cfg = git2::Config::open_default().unwrap();
-                return git2::Cred::credential_helper(&cfg, url, username);
-            }
-            if cred_type.contains(git2::SSH_KEY) && !tried_sshkey {
+    cb.credentials(move |url, username, cred_type| {
+        if cred_type.contains(git2::USER_PASS_PLAINTEXT) {
+            let cfg = git2::Config::open_default().unwrap();
+            return git2::Cred::credential_helper(&cfg, url, username);
+        }
+        if cred_type.contains(git2::SSH_KEY) && !tried_sshkey {
 
-                // If ssh-agent authentication fails, libgit2 will keep
-                // calling this callback asking for other authentication
-                // methods to try. Make sure we only try ssh-agent once,
-                // to avoid looping forever.
-                tried_sshkey = true;
-                let username = username.unwrap();
-                return git2::Cred::ssh_key_from_agent(&username);
-            }
-            Err(git2::Error::from_str("no authentication available"))
-        },
-    );
+            // If ssh-agent authentication fails, libgit2 will keep
+            // calling this callback asking for other authentication
+            // methods to try. Make sure we only try ssh-agent once,
+            // to avoid looping forever.
+            tried_sshkey = true;
+            let username = username.unwrap();
+            return git2::Cred::ssh_key_from_agent(&username);
+        }
+        Err(git2::Error::from_str("no authentication available"))
+    });
 
     let mut fo = git2::FetchOptions::new();
-    fo.remote_callbacks(cb)
-        .download_tags(git2::AutotagOption::All);
+    fo.remote_callbacks(cb).download_tags(
+        git2::AutotagOption::All,
+    );
     let url = match repo {
         Url::Github(ref owner, ref repo) => format!("git://github.com/{}/{}.git", owner, repo),
         Url::Local(ref path) => path.to_owned(),
@@ -96,16 +88,14 @@ where
         .branch(&revision)
         .fetch_options(fo)
         .clone(&url, dir.as_ref())
-        .chain_err(
-            || {
-                format!(
-                    "failed to clone repo {}@{} into directory {}",
-                    &url,
-                    revision.clone(),
-                    dir.as_ref().to_string_lossy()
-                )
-            },
-        )?;
+        .chain_err(|| {
+            format!(
+                "failed to clone repo {}@{} into directory {}",
+                &url,
+                revision.clone(),
+                dir.as_ref().to_string_lossy()
+            )
+        })?;
 
     debug!("cloned {:?} to {:?}", repo, dir.as_ref());
     Ok(())
@@ -119,40 +109,40 @@ mod tests {
     #[test]
     fn test_authenticated_ssh_url() {
         assert_eq!(
-            Url::from_str("git@github.com:user/repo.git"),
-            Some(Url::Remote(String::from("git@github.com:user/repo.git")))
+            Url::from_str("git@github.com:user/repo.git").unwrap(),
+            Url::Remote(String::from("git@github.com:user/repo.git"))
         )
     }
 
     #[test]
     fn test_public_ssh_url() {
         assert_eq!(
-            Url::from_str("git://github.com:user/repo.git"),
-            Some(Url::Remote(String::from("git://github.com:user/repo.git")))
+            Url::from_str("git://github.com:user/repo.git").unwrap(),
+            Url::Remote(String::from("git://github.com:user/repo.git"))
         )
     }
 
     #[test]
     fn test_https_url() {
         assert_eq!(
-            Url::from_str("https://github.com/user/repo.git"),
-            Some(Url::Remote(String::from("https://github.com/user/repo.git")),)
+            Url::from_str("https://github.com/user/repo.git").unwrap(),
+            Url::Remote(String::from("https://github.com/user/repo.git"))
         )
     }
 
     #[test]
     fn test_github_url() {
         assert_eq!(
-            Url::from_str("user/repo"),
-            Some(Url::Github(String::from("user"), String::from("repo")))
+            Url::from_str("user/repo").unwrap(),
+            Url::Github(String::from("user"), String::from("repo"))
         )
     }
 
     #[test]
     fn test_local_uri() {
         assert_eq!(
-            Url::from_str("file:///some/path/foo.git"),
-            Some(Url::Local(String::from("/some/path/foo.git")))
+            Url::from_str("file:///some/path/foo.git").unwrap(),
+            Url::Local(String::from("/some/path/foo.git"))
         )
     }
 }

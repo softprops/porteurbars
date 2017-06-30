@@ -47,15 +47,14 @@ impl Template {
             .map(|r| path.join(r))
             .unwrap_or(path.to_path_buf())
             .join(DEFAULTS);
-        let map = defaults::from_file(defaults_file.clone())
-            .chain_err(
-                move || {
-                    format!(
-                        "failed to parse credentials from file {}",
-                        defaults_file.to_string_lossy()
-                    )
-                },
-            )?;
+        let map = defaults::from_file(defaults_file.clone()).chain_err(
+            move || {
+                format!(
+                    "failed to parse credentials from file {}",
+                    defaults_file.to_string_lossy()
+                )
+            },
+        )?;
         let resolved = interact(&map).chain_err(|| "failed to parse defaults")?;
         Ok(resolved)
     }
@@ -67,9 +66,10 @@ impl Template {
         R: AsRef<Path>,
     {
         let ctx = self.context(&root)?;
-        let adjusted_path = root.as_ref()
-            .map(|r| self.path.join(r))
-            .unwrap_or(self.path.to_path_buf());
+        let adjusted_path = root.as_ref().map(|r| self.path.join(r)).unwrap_or(
+            self.path
+                .to_path_buf(),
+        );
 
         // apply handlebars processing
         let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
@@ -80,31 +80,30 @@ impl Template {
                 adjusted_path.join(TEMPLATE_DIR).to_str().unwrap(),
                 MAIN_SEPARATOR
             )
-                                   [..];
+                [..];
 
             // path relatived based on scratch dir
             let localpath = path.to_str().unwrap().trim_left_matches(scratchpath);
 
             // eval path as template
-            let evalpath = hbs.template_render(&localpath, &ctx)
-                .chain_err(|| format!("failed to render template {}", localpath))?;
+            let evalpath = hbs.template_render(&localpath, &ctx).chain_err(|| {
+                format!("failed to render template {}", localpath)
+            })?;
 
             // rewritten path, based on target dir and eval path
             let targetpath = target.as_ref().join(evalpath);
 
             if path.is_dir() {
-                fs::create_dir_all(targetpath)
-                    .chain_err(|| format!("failed to create directory {}", path.to_string_lossy()))?
+                fs::create_dir_all(targetpath).chain_err(|| {
+                    format!("failed to create directory {}", path.to_string_lossy())
+                })?
             } else {
                 let mut file = File::open(path)?;
                 let mut s = String::new();
                 file.read_to_string(&mut s)?;
                 if targetpath.exists() {
                     // open file for reading and writing
-                    let mut file = OpenOptions::new()
-                        .write(true)
-                        .read(true)
-                        .open(&targetpath)?;
+                    let mut file = OpenOptions::new().write(true).read(true).open(&targetpath)?;
 
                     // get the current content
                     let mut current_content = String::new();
@@ -122,10 +121,9 @@ impl Template {
                         )?;
                         if !keep {
                             // force truncation of current content
-                            let mut file = OpenOptions::new()
-                                .write(true)
-                                .truncate(true)
-                                .open(targetpath)?;
+                            let mut file = OpenOptions::new().write(true).truncate(true).open(
+                                targetpath,
+                            )?;
                             file.write_all(template_eval.as_bytes())?;
                         }
                     }
@@ -140,9 +138,10 @@ impl Template {
         create_dir_all(target.as_ref())?;
         let mut hbs = bars();
         for entry in WalkDir::new(&adjusted_path.join(TEMPLATE_DIR))
-                .into_iter()
-                .skip(1)
-                .filter_map(|e| e.ok()) {
+            .into_iter()
+            .skip(1)
+            .filter_map(|e| e.ok())
+        {
             debug!("applying {:?}", entry.path().display());
             apply(entry.path(), &mut hbs)?
         }
@@ -158,17 +157,14 @@ pub fn bars() -> Handlebars {
     {
         bars.register_helper(
             name,
-            Box::new(
-                move |h: &Helper,
-                      _: &Handlebars,
-                      rc: &mut RenderContext|
-                      -> ::std::result::Result<(), RenderError> {
-                    let value = h.params().get(0).unwrap().value();
-                    rc.writer
-                        .write(f(value.as_string().unwrap()).as_bytes())?;
-                    Ok(())
-                },
-            ),
+            Box::new(move |h: &Helper,
+                  _: &Handlebars,
+                  rc: &mut RenderContext|
+                  -> ::std::result::Result<(), RenderError> {
+                let value = h.params().get(0).unwrap().value();
+                rc.writer.write(f(value.as_string().unwrap()).as_bytes())?;
+                Ok(())
+            }),
         );
     }
 
@@ -196,7 +192,7 @@ where
 }
 
 /// prompt for a value defaulting to a given string when an answer is not available
-fn prompt(name: &str, default: &String) -> io::Result<String> {
+fn prompt(name: &str, default: &str) -> io::Result<String> {
     let mut answer = String::new();
     print!("{} [{}]: ", name, default);
     io::stdout().flush()?;
@@ -213,12 +209,16 @@ fn prompt(name: &str, default: &String) -> io::Result<String> {
 /// to resolve the parameters that can not be inferred from env
 fn interact(defaults: &defaults::Defaults) -> Result<BTreeMap<String, String>> {
     let mut resolved = BTreeMap::new();
-    for (k, v) in defaults {
-        let answer = match env::var(k) {
-            Ok(v) => v,
-            _ => prompt(k, v)?,
-        };
-        resolved.insert(k.clone(), answer);
+    for pair in defaults.iter() {
+        match pair {
+            &(ref k, ref v) => {
+                let answer = match env::var(k) {
+                    Ok(v) => v,
+                    _ => prompt(k.as_ref(), v.as_ref())?,
+                };
+                resolved.insert(k.clone(), answer);
+            }
+        }
     }
     Ok(resolved)
 }

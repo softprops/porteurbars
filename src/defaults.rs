@@ -1,10 +1,9 @@
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::path::Path;
 use std::io::Read;
 use errors::Result;
 
-pub type Defaults = BTreeMap<String, String>;
+pub type Defaults = Vec<(String, String)>;
 
 /// parses key/value pairs from a target file
 pub fn from_file<P>(path: P) -> Result<Defaults>
@@ -21,22 +20,22 @@ pub fn from_string(s: String) -> Defaults {
     s.lines()
         .filter(|l| !l.starts_with("#"))
         .map(|l| l.splitn(2, "=").collect::<Vec<_>>())
-        .fold(
-            BTreeMap::new(), |mut acc, pair| {
-                if pair.len() == 2 {
-                    if let Some(value) = pair[1].splitn(2, "#").next() {
-                        acc.insert(pair[0].trim().to_owned(), value.trim().to_owned());
-                    }
+        .fold(Vec::new(), |mut acc, pair| {
+            if pair.len() == 2 {
+                if let Some(value) = pair[1].splitn(2, "#").next() {
+                    acc.push((pair[0].trim().to_owned(), value.trim().to_owned()));
                 }
-                acc
             }
-        )
+            acc
+        })
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
     use super::*;
+
+    #[test]
+    fn parses_defaults_preserving_order() {}
 
     #[test]
     fn test_from_string() {
@@ -48,9 +47,9 @@ FOO=bar # a comment
 BAZ = boom
 ",
         );
-        let mut expected = BTreeMap::new();
-        expected.insert(String::from("FOO"), String::from("bar"));
-        expected.insert(String::from("BAZ"), String::from("boom"));
+        let mut expected = Vec::new();
+        expected.push((String::from("FOO"), String::from("bar")));
+        expected.push((String::from("BAZ"), String::from("boom")));
         assert_eq!(from_string(contents), expected)
     }
 }
