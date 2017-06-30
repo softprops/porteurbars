@@ -15,9 +15,10 @@ fn run(args: ArgMatches) -> Result<()> {
     let url = porteurbars::git::Url::from_str(repo)?;
     let target = args.value_of("target").unwrap_or(".");
     let root = args.value_of("template_root");
+    let revision = args.value_of("rev").unwrap_or("master");
     info!("Cloning...");
     let tmp = TempDir::new("porteurbars")?;
-    git::clone(url, &tmp, "master")?;
+    git::clone(url, &tmp, revision)?;
     info!("Applying template...");
     Template::new(&tmp).apply(target, root)?;
     println!("off you go");
@@ -53,6 +54,14 @@ github: user/repo
                 .help(
                     "directory within <repository> to use as root. defaults to base of repo",
                 ),
+        )
+        .arg(
+            Arg::with_name("rev")
+                .short("r")
+                .long("rev")
+                .value_name("revision")
+                .takes_value(true)
+                .help("git revision to checkout. defaults to 'master'"),
         )
         .get_matches();
 

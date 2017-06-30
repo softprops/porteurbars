@@ -62,7 +62,6 @@ where
             return git2::Cred::credential_helper(&cfg, url, username);
         }
         if cred_type.contains(git2::SSH_KEY) && !tried_sshkey {
-
             // If ssh-agent authentication fails, libgit2 will keep
             // calling this callback asking for other authentication
             // methods to try. Make sure we only try ssh-agent once,
@@ -89,12 +88,7 @@ where
         .fetch_options(fo)
         .clone(&url, dir.as_ref())
         .chain_err(|| {
-            format!(
-                "failed to clone repo {}@{} into directory {}",
-                &url,
-                revision.clone(),
-                dir.as_ref().to_string_lossy()
-            )
+            format!("failed to clone repo {}@{}", &url, revision.clone())
         })?;
 
     debug!("cloned {:?} to {:?}", repo, dir.as_ref());
