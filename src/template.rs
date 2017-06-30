@@ -9,8 +9,9 @@ use std::fs::{self, File, create_dir_all, OpenOptions};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::io::{self, Read, Write};
 use walkdir::WalkDir;
-
+use difference::{Changeset, Difference};
 use super::defaults;
+extern crate term;
 
 /// file to clone template to
 // const TMP_PREFIX: &'static str = "porteurbars";
@@ -183,12 +184,64 @@ where
         "Conflicts exist with the current version of {}\n",
         file.as_ref().display()
     );
-    println!("{}", difference::Changeset::new(current, new, "\n"));
-    print!("Do you want to keep the previous version? [y/n]: ");
+    diff(difference::Changeset::new(current, new, "\n"))?;
+    print!("Do you want to keep the previous version? Type `n` to replace it: ");
     io::stdout().flush()?;
     io::stdin().read_line(&mut answer)?;
     let trimmed = answer.trim().to_lowercase();
     Ok(trimmed.is_empty() || trimmed != String::from("n"))
+}
+
+fn diff(changes: difference::Changeset) -> io::Result<()> {
+    let Changeset { diffs, .. } = changes;
+    let mut t = term::stdout().unwrap();
+
+    for i in 0..diffs.len() {
+        match diffs[i] {
+            Difference::Same(ref x) => {
+                t.reset()?;
+                writeln!(t, " {}", x)?;
+            }
+            Difference::Add(ref x) => {
+                match diffs[i - 1] {
+                    Difference::Rem(ref y) => {
+                        t.fg(term::color::GREEN)?;
+                        write!(t, "+")?;
+                        let Changeset { diffs, .. } = Changeset::new(y, x, "");
+                        for c in diffs {
+                            match c {
+                                Difference::Same(ref z) => {
+                                    t.fg(term::color::GREEN)?;
+                                    write!(t, "{}", z)?;
+                                    write!(t, "")?;
+                                }
+                                Difference::Add(ref z) => {
+                                    t.fg(term::color::WHITE)?;
+                                    t.bg(term::color::GREEN)?;
+                                    write!(t, "{}", z)?;
+                                    t.reset()?;
+                                    write!(t, "")?;
+                                }
+                                _ => (),
+                            }
+                        }
+                        writeln!(t, "")?;
+                    }
+                    _ => {
+                        t.fg(term::color::BRIGHT_GREEN)?;
+                        writeln!(t, "+{}", x)?;
+                    }
+                };
+            }
+            Difference::Rem(ref x) => {
+                t.fg(term::color::RED)?;
+                writeln!(t, "-{}", x)?;
+            }
+        }
+    }
+    t.reset()?;
+    t.flush()?;
+    Ok(())
 }
 
 /// prompt for a value defaulting to a given string when an answer is not available
