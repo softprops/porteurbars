@@ -39,7 +39,7 @@ impl Template {
     }
 
     /// resolve context
-    fn context<R>(&self, root: &Option<R>) -> Result<BTreeMap<String, String>>
+    fn context<R>(&self, root: &Option<R>, yes: bool) -> Result<BTreeMap<String, String>>
     where
         R: AsRef<Path>,
     {
@@ -48,25 +48,33 @@ impl Template {
             .map(|r| path.join(r))
             .unwrap_or(path.to_path_buf())
             .join(DEFAULTS);
-        let map = defaults::from_file(defaults_file.clone()).chain_err(
+        let defaults = defaults::from_file(defaults_file.clone()).chain_err(
             move || {
                 format!(
-                    "failed to parse credentials from file {}",
+                    "failed to parse defaults from file {}",
                     defaults_file.to_string_lossy()
                 )
             },
         )?;
-        let resolved = interact(&map).chain_err(|| "failed to parse defaults")?;
+        let resolved = if yes {
+            defaults.iter().fold(BTreeMap::new(), |mut a, e| {
+                let &(ref k, ref v) = e;
+                a.insert(k.clone(), v.clone());
+                a
+            })
+        } else {
+            interact(&defaults).chain_err(|| "failed to parse defaults")?
+        };
         Ok(resolved)
     }
 
     /// Apply template
-    pub fn apply<P, R>(&self, target: P, root: Option<R>) -> Result<()>
+    pub fn apply<P, R>(&self, target: P, root: Option<R>, yes: bool, keep: bool) -> Result<()>
     where
         P: AsRef<Path>,
         R: AsRef<Path>,
     {
-        let ctx = self.context(&root)?;
+        let ctx = self.context(&root, yes)?;
         let adjusted_path = root.as_ref().map(|r| self.path.join(r)).unwrap_or(
             self.path
                 .to_path_buf(),
@@ -115,12 +123,13 @@ impl Template {
 
                     // if there's a diff prompt for change
                     if template_eval != current_content {
-                        let keep = keep_current_content(
-                            current_content.as_ref(),
-                            template_eval.as_ref(),
-                            &targetpath,
-                        )?;
-                        if !keep {
+                        let kept = keep ||
+                            keep_current_content(
+                                current_content.as_ref(),
+                                template_eval.as_ref(),
+                                &targetpath,
+                            )?;
+                        if !kept {
                             // force truncation of current content
                             let mut file = OpenOptions::new().write(true).truncate(true).open(
                                 targetpath,
@@ -181,15 +190,15 @@ where
 {
     let mut answer = String::new();
     println!(
-        "Conflicts exist with the current version of {}\n",
+        "\n⚠️ Warning: Conflicts exist with the previous version of {}\n",
         file.as_ref().display()
     );
     diff(difference::Changeset::new(current, new, "\n"))?;
-    print!("Do you want to keep the previous version? Type `n` to replace it: ");
+    print!("Type `r` to replace it: ");
     io::stdout().flush()?;
     io::stdin().read_line(&mut answer)?;
     let trimmed = answer.trim().to_lowercase();
-    Ok(trimmed.is_empty() || trimmed != String::from("n"))
+    Ok(trimmed.is_empty() || trimmed != String::from("r"))
 }
 
 fn diff(changes: difference::Changeset) -> io::Result<()> {
@@ -263,15 +272,12 @@ fn prompt(name: &str, default: &str) -> io::Result<String> {
 fn interact(defaults: &defaults::Defaults) -> Result<BTreeMap<String, String>> {
     let mut resolved = BTreeMap::new();
     for pair in defaults.iter() {
-        match pair {
-            &(ref k, ref v) => {
-                let answer = match env::var(k) {
-                    Ok(v) => v,
-                    _ => prompt(k.as_ref(), v.as_ref())?,
-                };
-                resolved.insert(k.clone(), answer);
-            }
-        }
+        let &(ref k, ref v) = pair;
+        let answer = match env::var(k) {
+            Ok(v) => v,
+            _ => prompt(k.as_ref(), v.as_ref())?,
+        };
+        resolved.insert(k.clone(), answer);
     }
     Ok(resolved)
 }

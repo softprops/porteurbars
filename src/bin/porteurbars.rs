@@ -16,11 +16,13 @@ fn run(args: ArgMatches) -> Result<()> {
     let target = args.value_of("target").unwrap_or(".");
     let root = args.value_of("template_root");
     let revision = args.value_of("rev").unwrap_or("master");
+    let yes = args.occurrences_of("yes") > 0;
+    let replace = args.occurrences_of("keep") > 0;
     info!("Cloning...");
     let tmp = TempDir::new("porteurbars")?;
     git::clone(url, &tmp, revision)?;
     info!("Applying template...");
-    Template::new(&tmp).apply(target, root)?;
+    Template::new(&tmp).apply(target, root, yes, replace)?;
     println!("off you go");
     Ok(())
 }
@@ -62,6 +64,22 @@ github: user/repo
                 .value_name("revision")
                 .takes_value(true)
                 .help("git revision to checkout. defaults to 'master'"),
+        )
+        .arg(
+            Arg::with_name("yes")
+                .short("y")
+                .long("yes")
+                .takes_value(false)
+                .help("disables value prompts by accepting all default values"),
+        )
+        .arg(
+            Arg::with_name("keep")
+                .short("k")
+                .long("keep")
+                .takes_value(false)
+                .help(
+                    "disables replacement prompts and keeps local copies of files",
+                ),
         )
         .get_matches();
 
