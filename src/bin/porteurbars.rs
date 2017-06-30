@@ -29,23 +29,31 @@ fn main() {
     let args = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
-        .arg(Arg::with_name("repository").value_name("repository")
-        .required(true).help(
-            "uri of template to apply.
+        .arg(
+            Arg::with_name("repository")
+                .value_name("repository")
+                .required(true)
+                .help(
+                    "uri of template to apply.
 example uris
 github: user/repo
  local: file:///path/to/repo
-   git: git@github.com:user/repo.git"
+   git: git@github.com:user/repo.git",
+                ),
+        )
+        .arg(Arg::with_name("target").value_name("target").help(
+            "directory to write template output to. defaults to current working directory",
         ))
-        .arg(Arg::with_name("target")
-            .value_name("target")
-            .help("directory to write template output to. defaults to current working directory"))
-        .arg(Arg::with_name("base")
+        .arg(
+            Arg::with_name("base")
                 .short("b")
                 .long("base")
                 .value_name("base_directory")
                 .takes_value(true)
-                .help("directory within <repository> to use as root. defaults to base of repo"))
+                .help(
+                    "directory within <repository> to use as root. defaults to base of repo",
+                ),
+        )
         .get_matches();
 
 
