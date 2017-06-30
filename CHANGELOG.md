@@ -1,4 +1,4 @@
-# 0.1.0 (unreleased)
+# 0.1.0
 
 * add ability to refer to a revision of a git repo
 * improve diff color UX
