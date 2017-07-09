@@ -51,7 +51,7 @@ addons:
     - libelf-dev
     - libdw-dev
     - binutils-dev
-    - libbfd-dev
+    - libiberty-dev
 
 before_deploy:
   - sh ci/before_deploy.sh
