@@ -1,4 +1,4 @@
-# porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars) [!version](https://img.shields.io/github/release/softprops/porteurbars.svg)
+# porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars) ![version](https://img.shields.io/github/release/softprops/porteurbars.svg)
 
 
 > less assembly required
