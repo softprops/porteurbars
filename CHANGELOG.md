@@ -1,3 +1,7 @@
+# 0.1.1
+
+* fix release binary publishing
+
 # 0.1.0
 
 * add ability to refer to a revision of a git repo
