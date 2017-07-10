@@ -26,6 +26,12 @@ the part that matters.
 $ brew install softprops/tools/porteurbars
 ```
 
+If you want to upgrade to newer versions, use `brew upgrade`
+
+```bash
+$ brew upgrade softprops/tools/porteurbars
+```
+
 ### github releases
 
 You can get up and going by downloading a binary directly from [github releases](https://github.com/softprops/porteurbars/releases).
