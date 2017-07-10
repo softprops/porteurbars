@@ -1,4 +1,4 @@
-# porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars)
+# porteurbars [![Build Status](https://travis-ci.org/softprops/porteurbars.svg?branch=master)](https://travis-ci.org/softprops/porteurbars) [!version](https://img.shields.io/github/release/softprops/porteurbars.svg)
 
 
 > less assembly required
@@ -34,21 +34,24 @@ You can get up and going by downloading a binary directly from [github releases]
 
 ```bash
 $ cd $HOME/bin
-$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.0.2/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.1.1/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
   | tar -xz
 $ porteurbars --help
-porteurbars 0.0.2
+porteurbars 0.1.1
 portable git hosted project templates
 
 USAGE:
-    porteurbars [OPTIONS] <repository> [<target>]
+    porteurbars [FLAGS] [OPTIONS] <repository> [<target>]
 
 FLAGS:
     -h, --help       Prints help information
+    -k, --keep       disables replacement prompts and keeps local copies of files
     -V, --version    Prints version information
+    -y, --yes        disables value prompts by accepting all default values
 
 OPTIONS:
     -b, --base <base_directory>    directory within <repository> to use as root. defaults to base of repo
+    -r, --rev <revision>           git revision to checkout. defaults to 'master'
 
 ARGS:
     <repository>    uri of template to apply.
