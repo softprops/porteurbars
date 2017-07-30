@@ -172,7 +172,7 @@ pub fn bars() -> Handlebars {
                   rc: &mut RenderContext|
                   -> ::std::result::Result<(), RenderError> {
                 let value = h.params().get(0).unwrap().value();
-                rc.writer.write(f(value.as_string().unwrap()).as_bytes())?;
+                rc.writer.write(f(value.as_str().unwrap()).as_bytes())?;
                 Ok(())
             }),
         );
