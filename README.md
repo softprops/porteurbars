@@ -38,10 +38,10 @@ You can get up and going by downloading a binary directly from [github releases]
 
 ```bash
 $ cd $HOME/bin
-$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.1.1/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.1.2/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
   | tar -xz
 $ porteurbars --help
-porteurbars 0.1.1
+porteurbars 0.1.2
 portable git hosted project templates
 
 USAGE:
@@ -68,7 +68,7 @@ ARGS:
 
 ## assumptions
 
-Porteurbars templates follow two simple conventions.  
+Porteurbars templates follow two simple conventions.
 
 1) Porteurbars follows the [12-factor philosophy](http://12factor.net/config) for how to configure your templates.
 Porteurbars assumes a file at the root of a directory called `default.env` exists, containing
