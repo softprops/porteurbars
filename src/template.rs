@@ -295,7 +295,7 @@ mod tests {
         assert_eq!(
             "Hello, {{upper name}}",
             bars()
-                .template_render("Hello, \\{{upper name}}", &map)
+                .template_render(r"Hello, \\{{upper name}}", &map)
                 .unwrap()
         );
     }
