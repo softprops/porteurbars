@@ -287,6 +287,19 @@ mod tests {
     use std::collections::BTreeMap;
     use super::*;
 
+
+    #[test]
+    fn test_bars_respects_escapes_tags() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "porteurbars".to_owned());
+        assert_eq!(
+            "Hello, {{upper name}}",
+            bars()
+                .template_render("Hello, \\{{upper name}}", &map)
+                .unwrap()
+        );
+    }
+
     #[test]
     fn test_bars_upper() {
         let mut map = BTreeMap::new();

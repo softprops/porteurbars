@@ -1,6 +1,6 @@
 [package]
 name = "porteurbars"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["softprops <d.tangren@gmail.com>"]
 description = "portable git hosted project template"
 documentation = "https://softprops.github.io/porteurbars"
@@ -20,7 +20,7 @@ env_logger = "0.4"
 error-chain = "0.10"
 difference = "1.0"
 git2 = "0.6"
-handlebars = "0.27"
+handlebars = "0.28"
 lazy_static = "0.2"
 log = "0.3"
 regex = "0.2"

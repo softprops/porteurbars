@@ -1,3 +1,7 @@
+# 0.1.2
+
+* enable escaped handlebars tag delimiters in templates
+
 # 0.1.1
 
 * fix release binary publishing
