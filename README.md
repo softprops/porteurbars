@@ -4,14 +4,12 @@
 > portable github hosted project templates. less assembly required
 
 Porteurbars is a command line tool for sharing and applying reusable project
-templates that remove tedious boilerplate.
-
-This allows you to spend less time in the bikeshed and more time on the road,
-the part that matters.
+templates that remove tedious assembly boilerplate, allowing you to spend less
+time in the bikeshed and more time on the road.
 
 ## Goals
 
-* no runtime dependencies
+* 0 runtime dependencies
 * use existing and familiar tools: handlebars, github
 * use environment for configuration
 * fast
@@ -38,10 +36,10 @@ You can get up and going by downloading a binary directly from [github releases]
 
 ```bash
 $ cd $HOME/bin
-$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.1.2/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+$ curl -L "https://github.com/softprops/porteurbars/releases/download/v0.1.3/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
   | tar -xz
 $ porteurbars --help
-porteurbars 0.1.2
+porteurbars 0.1.3
 portable git hosted project templates
 
 USAGE:

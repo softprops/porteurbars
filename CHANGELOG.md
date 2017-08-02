@@ -1,3 +1,7 @@
+# 0.1.3
+
+* upgrade to new version of handlebars rs
+
 # 0.1.2
 
 * enable escaped handlebars tag delimiters in templates
