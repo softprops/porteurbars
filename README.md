@@ -193,7 +193,7 @@ the internet before your users can get going.
 porteurbars comes with a single standalone static binary, weighing in at about, 4M.
 
 giter8 uses a templating language many are not familiar with, but can get acclimated to,
-author templates. porteurbars uses [handlebars templates](http://handlebarsjs.com/) for templatging
+author templates. porteurbars uses [handlebars templates](http://handlebarsjs.com/) for templating
 in order to be familiar to a larger audience.
 
 giter8 templates are just git repositories. porteurbars templates are as well.
