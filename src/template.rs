@@ -317,7 +317,7 @@ mod tests {
 
 
     #[test]
-    fn test_bars_respects_escapes_tags() {
+    fn bars_respects_escapes_tags() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "porteurbars".to_owned());
         assert_eq!(
@@ -329,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_bars_upper() {
+    fn bars_upper() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "porteurbars".to_owned());
         assert_eq!(
@@ -341,7 +341,55 @@ mod tests {
     }
 
     #[test]
-    fn test_bars_lower() {
+    fn bars_capitalize() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "porteurbars".to_owned());
+        assert_eq!(
+            "Hello, Porteurbars",
+            bars()
+                .template_render("Hello, {{capitalize name}}", &map)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bars_camel() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "porteur_bars".to_owned());
+        assert_eq!(
+            "Hello, PorteurBars",
+            bars()
+                .template_render("Hello, {{camel name}}", &map)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bars_dashed() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "porteur_bars".to_owned());
+        assert_eq!(
+            "Hello, porteur-bars",
+            bars()
+                .template_render("Hello, {{dashed name}}", &map)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bars_snake() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "porteurBars".to_owned());
+        assert_eq!(
+            "Hello, porteur_bars",
+            bars()
+                .template_render("Hello, {{snake name}}", &map)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bars_lower() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "PORTEURBARS".to_owned());
         assert_eq!(
