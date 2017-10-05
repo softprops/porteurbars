@@ -1,16 +1,17 @@
 use errors::{Result, ResultExt};
 
+use case::CaseExt;
 use difference;
 
+use super::defaults;
+use difference::{Changeset, Difference};
 use handlebars::{Handlebars, Helper, RenderContext, RenderError};
 use std::collections::BTreeMap;
 use std::env;
-use std::fs::{self, File, create_dir_all, OpenOptions};
-use std::path::{Path, PathBuf, MAIN_SEPARATOR};
+use std::fs::{self, File, OpenOptions, create_dir_all};
 use std::io::{self, Read, Write};
+use std::path::{MAIN_SEPARATOR, Path, PathBuf};
 use walkdir::WalkDir;
-use difference::{Changeset, Difference};
-use super::defaults;
 extern crate term;
 
 /// file to clone template to
@@ -39,7 +40,11 @@ impl Template {
     }
 
     /// resolve context
-    fn context<R>(&self, root: &Option<R>, yes: bool) -> Result<BTreeMap<String, String>>
+    fn context<R>(
+        &self,
+        root: &Option<R>,
+        yes: bool,
+    ) -> Result<BTreeMap<String, String>>
     where
         R: AsRef<Path>,
     {
@@ -69,42 +74,53 @@ impl Template {
     }
 
     /// Apply template
-    pub fn apply<P, R>(&self, target: P, root: Option<R>, yes: bool, keep: bool) -> Result<()>
+    pub fn apply<P, R>(
+        &self,
+        target: P,
+        root: Option<R>,
+        yes: bool,
+        keep: bool,
+    ) -> Result<()>
     where
         P: AsRef<Path>,
         R: AsRef<Path>,
     {
         let ctx = self.context(&root, yes)?;
-        let adjusted_path = root.as_ref().map(|r| self.path.join(r)).unwrap_or(
-            self.path
-                .to_path_buf(),
-        );
+        let adjusted_path = root.as_ref()
+            .map(|r| self.path.join(r))
+            .unwrap_or(self.path.to_path_buf());
 
         // apply handlebars processing
         let apply = |path: &Path, hbs: &mut Handlebars| -> Result<()> {
 
             // /tmp/download_dir/templates
-            let scratchpath = &format!(
-                "{}{}",
-                adjusted_path.join(TEMPLATE_DIR).to_str().unwrap(),
-                MAIN_SEPARATOR
-            )
-                [..];
+            let scratchpath =
+                &format!(
+                    "{}{}",
+                    adjusted_path.join(TEMPLATE_DIR).to_str().unwrap(),
+                    MAIN_SEPARATOR
+                )
+                    [..];
 
             // path relatived based on scratch dir
-            let localpath = path.to_str().unwrap().trim_left_matches(scratchpath);
+            let localpath =
+                path.to_str().unwrap().trim_left_matches(scratchpath);
 
             // eval path as template
-            let evalpath = hbs.template_render(&localpath, &ctx).chain_err(|| {
-                format!("failed to render template {}", localpath)
-            })?;
+            let evalpath =
+                hbs.template_render(&localpath, &ctx).chain_err(|| {
+                    format!("failed to render template {}", localpath)
+                })?;
 
             // rewritten path, based on target dir and eval path
             let targetpath = target.as_ref().join(evalpath);
 
             if path.is_dir() {
                 fs::create_dir_all(targetpath).chain_err(|| {
-                    format!("failed to create directory {}", path.to_string_lossy())
+                    format!(
+                        "failed to create directory {}",
+                        path.to_string_lossy()
+                    )
                 })?
             } else {
                 let mut file = File::open(path)?;
@@ -112,7 +128,10 @@ impl Template {
                 file.read_to_string(&mut s)?;
                 if targetpath.exists() {
                     // open file for reading and writing
-                    let mut file = OpenOptions::new().write(true).read(true).open(&targetpath)?;
+                    let mut file = OpenOptions::new()
+                        .write(true)
+                        .read(true)
+                        .open(&targetpath)?;
 
                     // get the current content
                     let mut current_content = String::new();
@@ -131,9 +150,10 @@ impl Template {
                             )?;
                         if !kept {
                             // force truncation of current content
-                            let mut file = OpenOptions::new().write(true).truncate(true).open(
-                                targetpath,
-                            )?;
+                            let mut file = OpenOptions::new()
+                                .write(true)
+                                .truncate(true)
+                                .open(targetpath)?;
                             file.write_all(template_eval.as_bytes())?;
                         }
                     }
@@ -180,11 +200,19 @@ pub fn bars() -> Handlebars {
 
     transform(&mut hbs, "upper", str::to_uppercase);
     transform(&mut hbs, "lower", str::to_lowercase);
+    transform(&mut hbs, "capitalize", CaseExt::to_capitalized);
+    transform(&mut hbs, "camel", CaseExt::to_camel);
+    transform(&mut hbs, "snake", CaseExt::to_snake);
+    transform(&mut hbs, "dashed", CaseExt::to_dashed);
 
     hbs
 }
 
-fn keep_current_content<P>(current: &str, new: &str, file: P) -> io::Result<bool>
+fn keep_current_content<P>(
+    current: &str,
+    new: &str,
+    file: P,
+) -> io::Result<bool>
 where
     P: AsRef<Path>,
 {
@@ -284,8 +312,8 @@ fn interact(defaults: &defaults::Defaults) -> Result<BTreeMap<String, String>> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
     use super::*;
+    use std::collections::BTreeMap;
 
 
     #[test]

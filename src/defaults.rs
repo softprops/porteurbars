@@ -1,7 +1,8 @@
-use std::fs::File;
-use std::path::Path;
-use std::io::Read;
+
 use errors::Result;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 
 pub type Defaults = Vec<(String, String)>;
 
@@ -11,7 +12,7 @@ where
     P: AsRef<Path>,
 {
     let mut s = String::new();
-    try!(File::open(path)?.read_to_string(&mut s));
+    File::open(path)?.read_to_string(&mut s)?;
     Ok(from_string(s))
 }
 
@@ -23,7 +24,9 @@ pub fn from_string(s: String) -> Defaults {
         .fold(Vec::new(), |mut acc, pair| {
             if pair.len() == 2 {
                 if let Some(value) = pair[1].splitn(2, "#").next() {
-                    acc.push((pair[0].trim().to_owned(), value.trim().to_owned()));
+                    acc.push(
+                        (pair[0].trim().to_owned(), value.trim().to_owned()),
+                    );
                 }
             }
             acc

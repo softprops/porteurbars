@@ -1,6 +1,7 @@
+
+use git2;
 use handlebars::{RenderError, TemplateError, TemplateRenderError};
 use std::io;
-use git2;
 
 
 /// Enumeration of types of errors

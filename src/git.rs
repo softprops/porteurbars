@@ -3,8 +3,8 @@ extern crate regex;
 use errors::{ErrorKind, Result, ResultExt};
 
 use git2::build::RepoBuilder;
-use std::path::Path;
 use regex::Regex;
+use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum Url {
@@ -78,7 +78,9 @@ where
         git2::AutotagOption::All,
     );
     let url = match repo {
-        Url::Github(ref owner, ref repo) => format!("git://github.com/{}/{}.git", owner, repo),
+        Url::Github(ref owner, ref repo) => {
+            format!("git://github.com/{}/{}.git", owner, repo)
+        }
         Url::Local(ref path) => path.to_owned(),
         Url::Remote(ref remote) => remote.to_owned(),
     };

@@ -5,10 +5,10 @@ extern crate clap;
 extern crate porteurbars;
 extern crate tempdir;
 
-use tempdir::TempDir;
-use clap::{ArgMatches, App, Arg};
+use clap::{App, Arg, ArgMatches};
 use porteurbars::{Result, Template};
 use porteurbars::git;
+use tempdir::TempDir;
 
 fn run(args: ArgMatches) -> Result<()> {
     let repo = args.value_of("repository").unwrap();
