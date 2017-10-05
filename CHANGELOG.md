@@ -1,3 +1,6 @@
+# 0.1.4
+
+* add new template helpers `capitalize`, `camel`, `snake`, `dashed`
 # 0.1.3
 
 * upgrade to new version of handlebars rs

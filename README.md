@@ -163,12 +163,23 @@ writing the new version. Porteurbars also allows you to "overlay" different inde
 ### handlebars helpers
 
 The choice of handlebars allows for template level "helpers". Currently only a minimal set
-of helpers beyond the built-ins are provided. `upper` and `lower`.
+of helpers beyond the built-ins are provided. As a refresher handlebars helper syntax will look something like the example below.
 
 
 ```hbs
 {{ upper foo }} {{ lower bar }}
 ```
+
+The table below lists the helpers by name and expected inputs and outputs
+
+| helper     | example in | example out |
+|------------|------------|-------------|
+| upper      | foobar     | FOOBAR     |
+| lower      | FOOBAR     | foobar      |
+| capitalize | foobar     | Foobar      |
+| camel      | foo_bar    | fooBar      |
+| snake      | fooBar     | foo_bar     |
+| dashed     | foo_bar    | foo-bar     |
 
 More are planned in the future, but I plan to let demand drive additions.
 
