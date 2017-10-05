@@ -1,3 +1,5 @@
+//! Porteurbars is a tool for sharing portable git hosted project templates
+
 extern crate case;
 #[macro_use]
 extern crate lazy_static;
