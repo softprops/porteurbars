@@ -1,3 +1,7 @@
+# 0.1.5
+
+* add new `eq` template helper
+
 # 0.1.4
 
 * add new template helpers `capitalize`, `camel`, `snake`, `dashed`
