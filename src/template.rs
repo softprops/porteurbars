@@ -5,7 +5,7 @@ use difference;
 
 use super::defaults;
 use difference::{Changeset, Difference};
-use handlebars::{Handlebars, Helper, RenderContext, RenderError};
+use handlebars::{Handlebars, Helper, RenderContext, RenderError, Renderable};
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::{self, File, OpenOptions, create_dir_all};
@@ -185,14 +185,20 @@ pub fn bars() -> Handlebars {
     where
         F: 'static + Fn(&str) -> String + Sync + Send,
     {
+        let helper_name = name.to_owned();
         bars.register_helper(
             name,
             Box::new(move |h: &Helper,
                   _: &Handlebars,
                   rc: &mut RenderContext|
                   -> ::std::result::Result<(), RenderError> {
-                let value = h.params().get(0).unwrap().value();
-                rc.writer.write(f(value.as_str().unwrap()).as_bytes())?;
+                let value = h.param(0)
+                    .and_then(|v| v.value().as_str().to_owned())
+                    .ok_or(RenderError::new(format!(
+                        "Parameter 0 with str type is required for {} helper.",
+                        helper_name
+                    )))?;
+                rc.writer.write(f(value).as_bytes())?;
                 Ok(())
             }),
         );
@@ -204,6 +210,31 @@ pub fn bars() -> Handlebars {
     transform(&mut hbs, "camel", CaseExt::to_camel);
     transform(&mut hbs, "snake", CaseExt::to_snake);
     transform(&mut hbs, "dashed", CaseExt::to_dashed);
+    // helper for eq(quality)
+    hbs.register_helper(
+        "eq",
+        Box::new(|h: &Helper,
+         r: &Handlebars,
+         rc: &mut RenderContext|
+         -> ::std::result::Result<(), RenderError> {
+            let a = h.param(0).and_then(|v| v.value().as_str()).ok_or(
+                RenderError::new(
+                    "Parameter 0 with str type is required for eq helper.",
+                ),
+            )?;
+            let b = h.param(1).and_then(|v| v.value().as_str()).ok_or(
+                RenderError::new(
+                    "Parameter 1 with str type is required for eq helper.",
+                ),
+            )?;
+            let tmpl = if a == b { h.template() } else { h.inverse() };
+            match tmpl {
+                Some(ref t) => t.render(r, rc),
+                None => Ok(()),
+            }
+        }),
+    );
+
 
     hbs
 }
@@ -396,6 +427,33 @@ mod tests {
             "Hello, porteurbars",
             bars()
                 .template_render("Hello, {{lower name}}", &map)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bars_eq() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "foo".to_owned());
+        assert_eq!(
+            "Hello, you",
+            bars()
+                .template_render(r#"Hello, {{#eq name "foo"}}you{{/eq}}"#, &map)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bars_neq() {
+        let mut map = BTreeMap::new();
+        map.insert("name".to_owned(), "bar".to_owned());
+        assert_eq!(
+            "Hello, bar",
+            bars()
+                .template_render(
+                    r#"Hello, {{#eq name "foo"}}you{{else}}bar{{/eq}}"#,
+                    &map,
+                )
                 .unwrap()
         );
     }
