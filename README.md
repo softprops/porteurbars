@@ -170,7 +170,7 @@ of helpers beyond the built-ins are provided. As a refresher handlebars helper s
 {{ upper foo }} {{ lower bar }}
 ```
 
-The table below lists the helpers by name and expected inputs and outputs
+The table below lists the transformation helpers by name and expected inputs and outputs
 
 | helper     | example in | example out |
 |------------|------------|-------------|
@@ -180,6 +180,18 @@ The table below lists the helpers by name and expected inputs and outputs
 | camel      | foo_bar    | fooBar      |
 | snake      | fooBar     | foo_bar     |
 | dashed     | foo_bar    | foo-bar     |
+
+It is sometimes useful to conditionally render something based on equality
+context data. To support this you may use the `eq` helper.
+
+```hbs
+{{#eq foo "bar"}}
+Hello equality
+{{else}}
+Hello alternative
+{{/eq}}
+```
+
 
 More are planned in the future, but I plan to let demand drive additions.
 
