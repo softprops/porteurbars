@@ -36,10 +36,10 @@ You can get up and going by downloading a binary directly from [github releases]
 
 ```bash
 $ cd $HOME/bin
-$ curl -#L "https://github.com/softprops/porteurbars/releases/download/v0.1.4/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
+$ curl -#L "https://github.com/softprops/porteurbars/releases/download/v0.1.5/porteurbars-$(uname -s)-$(uname -m).tar.gz" \
   | tar -xz -C ~/bin
 $ porteurbars --help
-porteurbars 0.1.4
+porteurbars 0.1.5
 portable git hosted project templates
 
 USAGE:
