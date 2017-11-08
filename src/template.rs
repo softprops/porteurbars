@@ -1,6 +1,5 @@
 use errors::{Result, ResultExt};
-
-use case::CaseExt;
+use inflector::Inflector;
 use difference;
 
 use super::defaults;
@@ -206,10 +205,10 @@ pub fn bars() -> Handlebars {
 
     transform(&mut hbs, "upper", str::to_uppercase);
     transform(&mut hbs, "lower", str::to_lowercase);
-    transform(&mut hbs, "capitalize", CaseExt::to_capitalized);
-    transform(&mut hbs, "camel", CaseExt::to_camel);
-    transform(&mut hbs, "snake", CaseExt::to_snake);
-    transform(&mut hbs, "dashed", CaseExt::to_dashed);
+    transform(&mut hbs, "capitalize", <str as Inflector>::to_title_case);
+    transform(&mut hbs, "camel", <str as Inflector>::to_pascal_case);
+    transform(&mut hbs, "snake", <str as Inflector>::to_snake_case);
+    transform(&mut hbs, "dashed", <str as Inflector>::to_kebab_case);
     // helper for eq(quality)
     hbs.register_helper(
         "eq",
@@ -411,10 +410,11 @@ mod tests {
     fn bars_snake() {
         let mut map = BTreeMap::new();
         map.insert("name".to_owned(), "porteurBars".to_owned());
+        map.insert("from".to_owned(), "Foo Bar".to_owned());
         assert_eq!(
-            "Hello, porteur_bars",
+            "Hello, porteur_bars, from foo_bar",
             bars()
-                .template_render("Hello, {{snake name}}", &map)
+                .template_render("Hello, {{snake name}}, from {{snake from}}", &map)
                 .unwrap()
         );
     }
