@@ -16,7 +16,7 @@ name = "porteurbars"
 path = "src/bin/porteurbars.rs"
 
 [dependencies]
-case = "0.1"
+Inflector = "0.11.0"
 clap = "2.26"
 env_logger = "0.4"
 error-chain = "0.11"
