@@ -108,7 +108,7 @@ impl Template {
 
             // eval path as template
             let evalpath =
-                hbs.template_render(&localpath, &ctx).chain_err(|| {
+                hbs.render_template(&localpath, &ctx).chain_err(|| {
                     format!("failed to render template {}", localpath)
                 })?;
 
@@ -138,7 +138,7 @@ impl Template {
                     file.read_to_string(&mut current_content)?;
 
                     // get the target content
-                    let template_eval = hbs.template_render(&s, &ctx)?;
+                    let template_eval = hbs.render_template(&s, &ctx)?;
 
                     // if there's a diff prompt for change
                     if template_eval != current_content {
@@ -159,7 +159,7 @@ impl Template {
                     }
                 } else {
                     let mut file = File::create(targetpath)?;
-                    hbs.template_renderw(&s, &ctx, &mut file)?;
+                    hbs.render_template_to_write(&s, &ctx, &mut file)?;
                 }
             }
             Ok(())
@@ -354,7 +354,7 @@ mod tests {
         assert_eq!(
             "Hello, {{upper name}}",
             bars()
-                .template_render(r"Hello, \\{{upper name}}", &map)
+                .render_template(r"Hello, \{{upper name}}", &map)
                 .unwrap()
         );
     }
@@ -366,7 +366,7 @@ mod tests {
         assert_eq!(
             "Hello, PORTEURBARS",
             bars()
-                .template_render("Hello, {{upper name}}", &map)
+                .render_template("Hello, {{upper name}}", &map)
                 .unwrap()
         );
     }
@@ -378,7 +378,7 @@ mod tests {
         assert_eq!(
             "Hello, Porteurbars",
             bars()
-                .template_render("Hello, {{capitalize name}}", &map)
+                .render_template("Hello, {{capitalize name}}", &map)
                 .unwrap()
         );
     }
@@ -390,7 +390,7 @@ mod tests {
         assert_eq!(
             "Hello, PorteurBars",
             bars()
-                .template_render("Hello, {{camel name}}", &map)
+                .render_template("Hello, {{camel name}}", &map)
                 .unwrap()
         );
     }
@@ -402,7 +402,7 @@ mod tests {
         assert_eq!(
             "Hello, porteur-bars",
             bars()
-                .template_render("Hello, {{dashed name}}", &map)
+                .render_template("Hello, {{dashed name}}", &map)
                 .unwrap()
         );
     }
@@ -414,7 +414,7 @@ mod tests {
         assert_eq!(
             "Hello, porteur_bars",
             bars()
-                .template_render("Hello, {{snake name}}", &map)
+                .render_template("Hello, {{snake name}}", &map)
                 .unwrap()
         );
     }
@@ -426,7 +426,7 @@ mod tests {
         assert_eq!(
             "Hello, porteurbars",
             bars()
-                .template_render("Hello, {{lower name}}", &map)
+                .render_template("Hello, {{lower name}}", &map)
                 .unwrap()
         );
     }
@@ -438,7 +438,7 @@ mod tests {
         assert_eq!(
             "Hello, you",
             bars()
-                .template_render(r#"Hello, {{#eq name "foo"}}you{{/eq}}"#, &map)
+                .render_template(r#"Hello, {{#eq name "foo"}}you{{/eq}}"#, &map)
                 .unwrap()
         );
     }
@@ -450,7 +450,7 @@ mod tests {
         assert_eq!(
             "Hello, bar",
             bars()
-                .template_render(
+                .render_template(
                     r#"Hello, {{#eq name "foo"}}you{{else}}bar{{/eq}}"#,
                     &map,
                 )
