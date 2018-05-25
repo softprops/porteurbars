@@ -28,7 +28,7 @@ fn run(args: ArgMatches) -> Result<()> {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
     let args = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("portable git hosted project templates")
