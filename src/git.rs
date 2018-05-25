@@ -57,11 +57,11 @@ where
     let mut cb = git2::RemoteCallbacks::new();
     let mut tried_sshkey = false;
     cb.credentials(move |url, username, cred_type| {
-        if cred_type.contains(git2::USER_PASS_PLAINTEXT) {
+        if cred_type.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
             let cfg = git2::Config::open_default().unwrap();
             return git2::Cred::credential_helper(&cfg, url, username);
         }
-        if cred_type.contains(git2::SSH_KEY) && !tried_sshkey {
+        if cred_type.contains(git2::CredentialType::SSH_KEY) && !tried_sshkey {
             // If ssh-agent authentication fails, libgit2 will keep
             // calling this callback asking for other authentication
             // methods to try. Make sure we only try ssh-agent once,
