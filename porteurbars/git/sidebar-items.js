@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Url",""]],"fn":[["clone","clone a repository at a rev to a directory a best attempt effort is made to authenticate requests when required to support private git repositories"]]});

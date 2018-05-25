@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["git",""]],"struct":[["Error","The Error type."],["Template","A template holds a path to template source and a file describing the default values associated with names used in the template"]],"trait":[["ResultExt","Additional methods for `Result`, for easy interaction with this crate."]],"type":[["Result","Convenient wrapper around `std::Result`."]]});
